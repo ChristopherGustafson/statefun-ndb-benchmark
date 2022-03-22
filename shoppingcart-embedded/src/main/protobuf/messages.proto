@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package shoppingcart.embedded;
+
+option java_multiple_files = true;
+option java_package = "shoppingcart.embedded.protos";
+
+message AddToCart {
+  string userId = 1;
+  string itemId = 2;
+  int32 quantity = 3;
+  string publishTimestamp = 4;
+}
+
+message RequestItem {
+  int32 quantity = 1;
+  string publishTimestamp = 2;
+}
+
+message ItemAvailability {
+  enum Status {
+    INSTOCK = 0;
+    OUTOFSTOCK = 1;
+  }
+  Status status = 1;
+  int32 quantity = 2;
+  string publishTimestamp = 3;
+}
+
+message Checkout {
+  string userId = 1;
+  string publishTimestamp = 2;
+}
+
+message RestockItem {
+  string itemId = 1;
+  int32 quantity = 2;
+  string publishTimestamp = 3;
+}
