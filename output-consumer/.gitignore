@@ -1,0 +1,7 @@
+.idea
+project/target
+project/project
+target
+.metals
+.vscode
+output-data
