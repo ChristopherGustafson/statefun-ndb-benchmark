@@ -1,11 +1,11 @@
 package output.consumer
 
 import java.sql.Timestamp
-
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.slf4j.LoggerFactory
 
+import java.text.{DateFormat, SimpleDateFormat}
 import collection.JavaConverters._
 
 /**
@@ -62,8 +62,15 @@ object FileSystemModeWriter {
         timeUDF(col("timestamp")).as("outputKafkaTimestamp")
       )
 
+    val dateFormat: DateFormat = new SimpleDateFormat("dd-MM-yyyy_HH:mm")
+    val currentTimeString: String = dateFormat.format(new Timestamp(1000 * Math.round(System.currentTimeMillis()/1000.0)))
+
     inputDataWithTimestampColumn
       .write
-      .json(configUtils.path)
+      .json(configUtils.path + "/" + currentTimeString)
+
+    sparkSession.stop()
+
   }
 }
+
