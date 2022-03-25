@@ -1,3 +1,5 @@
+#!/bin/bash
+
 export S3_ACCESS_KEY=placeholder-access-key # S3 access key of data input
 export S3_SECRET_KEY=placeholder-secret-key # S3 secret key of data input
 export INPUT_DATA_PATH=placeholder-data-path # S3 data path

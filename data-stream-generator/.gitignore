@@ -4,3 +4,5 @@
 /data-stream-generator.iws
 /project/target/
 /project/project/
+
+src/main/resources/data-generation/time*

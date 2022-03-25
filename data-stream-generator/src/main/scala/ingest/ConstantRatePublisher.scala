@@ -19,7 +19,6 @@ import scala.util.Try
 
 class ConstantRatePublisher(sparkSession: SparkSession, kafkaProperties: Properties) extends Publisher {
 
-
   override def publish(index: Int) = Future {
     val rawFile = if(ConfigUtils.local) {
       logger.info("will read file from local resources")
@@ -63,7 +62,7 @@ class ConstantRatePublisher(sparkSession: SparkSession, kafkaProperties: Propert
             0.to(Math.round(ConfigUtils.dataVolume.toInt/3.0).toInt).foreach { volumeIteration =>
               // Request with userId and quantity is a addToCart request
               if (observation.message.contains("userId") && observation.message.contains("quantity")) {
-                flowStats.mark()
+                addToCartStats.mark()
                 val msg = new ProducerRecord[String, String](
                   ConfigUtils.addTopic,
                   index + ConfigUtils.publisherNb + microBatch.toString + volumeIteration.toString + observation.key,
@@ -74,7 +73,7 @@ class ConstantRatePublisher(sparkSession: SparkSession, kafkaProperties: Propert
               // If it has userId but is not an addToCart, it is a checkout request
               else if (observation.message.contains("userId")) {
                 if(ConfigUtils.lastStage < 100 ) { // if the stage is equal to or larger than 100 then it needs only one input stream
-                  speedStats.mark()
+                  checkoutStats.mark()
                   val msg = new ProducerRecord[String, String](
                     ConfigUtils.checkoutTopic,
                     index + ConfigUtils.publisherNb + microBatch.toString + volumeIteration.toString + observation.key,
@@ -86,7 +85,7 @@ class ConstantRatePublisher(sparkSession: SparkSession, kafkaProperties: Propert
               // Otherwise it is a restock request
               else {
                 if(ConfigUtils.lastStage < 100 ) { // if the stage is equal to or larger than 100 then it needs only one input stream
-                  speedStats.mark()
+                  restockStats.mark()
                   val msg = new ProducerRecord[String, String](
                     ConfigUtils.restockTopic,
                     index + ConfigUtils.publisherNb + microBatch.toString + volumeIteration.toString + observation.key,
@@ -96,29 +95,27 @@ class ConstantRatePublisher(sparkSession: SparkSession, kafkaProperties: Propert
                 }
               }
             }
-            Thread.sleep(500);
           }
-          // val sleepingTimeTillNext5ms = next5MS - System.currentTimeMillis()
-          // if (sleepingTimeTillNext5ms > 0) {
-          //   logger.debug(s"""sleep time $sleepingTimeTillNext5ms ms before next 5  ms $next5MS ; current time: ${System.currentTimeMillis()}""")
-          //   Thread.sleep(sleepingTimeTillNext5ms)
-          // }
-          // next5MS = next5MS + 5
+           val sleepingTimeTillNext5ms = next5MS - System.currentTimeMillis()
+           if (sleepingTimeTillNext5ms > 0) {
+             logger.debug(s"""sleep time $sleepingTimeTillNext5ms ms before next 5  ms $next5MS ; current time: ${System.currentTimeMillis()}""")
+             Thread.sleep(sleepingTimeTillNext5ms)
+           }
+           next5MS = next5MS + 5
         }
-        // val sleepingTimeTillNext100Ms = next100Ms - System.currentTimeMillis()
-        // if (sleepingTimeTillNext100Ms > 0) {
-        //   logger.debug(s"""sleep time $sleepingTimeTillNext100Ms ms before next 100  ms $next100Ms ; current time: ${System.currentTimeMillis()}""")
-        //   Thread.sleep(sleepingTimeTillNext100Ms)
-        // }
-        // next100Ms = next100Ms + 100
+         val sleepingTimeTillNext100Ms = next100Ms - System.currentTimeMillis()
+         if (sleepingTimeTillNext100Ms > 0) {
+           logger.debug(s"""sleep time $sleepingTimeTillNext100Ms ms before next 100  ms $next100Ms ; current time: ${System.currentTimeMillis()}""")
+           Thread.sleep(sleepingTimeTillNext100Ms)
+         }
+         next100Ms = next100Ms + 100
       }
-
-      // // continue at the beginning of the next second
-      // val sleepTimeBeforeNextSecond = nextSecond - System.currentTimeMillis()
-      // if (sleepTimeBeforeNextSecond > 0) {
-      //   logger.debug(s"""sleep time $sleepTimeBeforeNextSecond ms before next timestamp $nextSecond ; current time: ${System.currentTimeMillis()}""")
-      //   Thread.sleep(sleepTimeBeforeNextSecond)
-      // }
+       // continue at the beginning of the next second
+       val sleepTimeBeforeNextSecond = nextSecond - System.currentTimeMillis()
+       if (sleepTimeBeforeNextSecond > 0) {
+         logger.debug(s"""sleep time $sleepTimeBeforeNextSecond ms before next timestamp $nextSecond ; current time: ${System.currentTimeMillis()}""")
+         Thread.sleep(sleepTimeBeforeNextSecond)
+       }
     }
 
     // Close producer
