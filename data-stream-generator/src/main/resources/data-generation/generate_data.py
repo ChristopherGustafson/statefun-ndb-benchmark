@@ -5,9 +5,10 @@ from datetime import datetime
 import json
 import numpy as np
 import math
+import string
 
 
-time_periods = 10
+time_periods = 20
 requests_per_period = 10000
 dirname = os.path.dirname(__file__)
 random.seed(datetime.now())
@@ -16,16 +17,24 @@ random.seed(datetime.now())
 unique_users = 10000
 unique_items = 100
 
-user_id_length = 6
-item_id_length = 2
+user_id_length = 12
+item_id_length = 8
 
 max_quantity = 10
 max_add_to_carts = 2
 restock_amount = 200
 
+
+# Generating random id as string
+# item_id = ''.join(random.choice(string.ascii_lowercase) for _ in range(item_id_length))
+
+
 minimum_id = 10000
-items = range(minimum_id, minimum_id + unique_items)
-users = range(minimum_id + unique_items, minimum_id + unique_items + unique_users)
+# items = range(minimum_id, minimum_id + unique_items)
+# users = range(minimum_id + unique_items, minimum_id + unique_items + unique_users)
+items = [''.join(random.choice(string.ascii_lowercase) for _ in range(item_id_length)) for _ in range(unique_items)]
+users = [''.join(random.choice(string.ascii_lowercase) for _ in range(user_id_length)) for _ in range(unique_users)]
+
 
 # Distribution parameters
 power_law_a = 3
@@ -117,11 +126,6 @@ for i in range(1, time_periods+1):
             else:
                 user_requests[user_id] = requests_before_checkout-1
                 send_add_to_cart(user_id)
-
-# Generating random id as string
-# item_id = ''.join(random.choice(string.ascii_lowercase) for _ in range(item_id_length))
-
-
 
 
 
