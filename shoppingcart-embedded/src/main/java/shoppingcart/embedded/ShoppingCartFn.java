@@ -3,6 +3,7 @@ package shoppingcart.embedded;
 import org.apache.flink.statefun.sdk.Context;
 import org.apache.flink.statefun.sdk.StatefulFunction;
 import org.apache.flink.statefun.sdk.annotations.Persisted;
+import org.apache.flink.statefun.sdk.state.PersistedTable;
 import org.apache.flink.statefun.sdk.state.PersistedValue;
 
 import com.google.protobuf.Message;
@@ -11,14 +12,21 @@ import org.slf4j.LoggerFactory;
 import shoppingcart.embedded.protos.AddToCart;
 import shoppingcart.embedded.protos.Checkout;
 import shoppingcart.embedded.protos.ItemAvailability;
+import shoppingcart.embedded.protos.Receipt;
 import shoppingcart.embedded.protos.RequestItem;
+
+import java.util.Iterator;
+import java.util.Map;
 
 public class ShoppingCartFn implements StatefulFunction {
 
     private static final Logger LOG = LoggerFactory.getLogger(ShoppingCartFn.class);
 
+//    @Persisted
+//    private final PersistedValue<Basket> BASKET = PersistedValue.of("basket", Basket.class);
+
     @Persisted
-    private final PersistedValue<Integer> BASKET_COUNT = PersistedValue.of("basket", Integer.class);
+    private final PersistedTable<String, Integer> BASKET = PersistedTable.of("basket", String.class, Integer.class);
 
     @Override
     public void invoke(Context context, Object input) {
@@ -39,10 +47,13 @@ public class ShoppingCartFn implements StatefulFunction {
         }
         else if(input instanceof ItemAvailability){
             ItemAvailability availability = (ItemAvailability) input;
+            String itemId = context.caller().id();
+            int requestedQuantity = availability.getQuantity();
 
             if(availability.getStatus().equals(ItemAvailability.Status.INSTOCK)){
-                int currentBasket = BASKET_COUNT.getOrDefault(0);
-                BASKET_COUNT.set(currentBasket + availability.getQuantity());
+                Integer quantity = BASKET.get(itemId);
+                quantity = quantity == null ? requestedQuantity : quantity + requestedQuantity;
+                BASKET.set(itemId, quantity);
             }
 
             AddToCart addConfirm = AddToCart.newBuilder()
@@ -59,7 +70,26 @@ public class ShoppingCartFn implements StatefulFunction {
             context.send(Identifiers.ADD_CONFIRM_EGRESS, addConfirm);
         }
         else if(input instanceof Checkout){
-            System.out.println("Shopping cart: received Checkout request from ingress");
+            Checkout checkout = (Checkout) input;
+
+            if(BASKET.entries().iterator().hasNext()){
+                String receipt = "User " + context.self().id() + " receipt: \n";
+                for(Map.Entry<String, Integer> entry : BASKET.entries()){
+                    receipt += "Item: " + entry.getKey() + ", Quantity: " + entry.getValue() + "\n";
+                }
+                BASKET.clear();
+
+                LOG.info("---");
+                LOG.info("Received checkout for basket:\n{}", receipt);
+                LOG.info("---");
+
+                Receipt receiptMessage = Receipt.newBuilder()
+                        .setUserId(context.self().id())
+                        .setReceipt(receipt)
+                        .setPublishTimestamp(checkout.getPublishTimestamp())
+                        .build();
+                context.send(Identifiers.RECEIPT_EGRESS, receiptMessage);
+            }
         }
     }
 

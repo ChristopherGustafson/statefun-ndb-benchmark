@@ -37,3 +37,9 @@ message RestockItem {
   int32 quantity = 2;
   string publishTimestamp = 3;
 }
+
+message Receipt {
+  string userId = 1;
+  string receipt = 2;
+  string publishTimestamp = 3;
+}

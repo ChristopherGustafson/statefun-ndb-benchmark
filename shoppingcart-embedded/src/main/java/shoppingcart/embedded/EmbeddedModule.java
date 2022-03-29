@@ -20,6 +20,9 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import shoppingcart.embedded.protos.AddToCart;
+import shoppingcart.embedded.protos.Checkout;
+import shoppingcart.embedded.protos.Receipt;
+import shoppingcart.embedded.protos.RestockItem;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -36,7 +39,7 @@ public class EmbeddedModule implements StatefulFunctionModule {
                         .withKafkaAddress("localhost:9092")
                         .withConsumerGroupId("my-group-id")
                         .withTopic("add-to-cart")
-                        .withDeserializer(KafkaDeserializer.class)
+                        .withDeserializer(Serialization.AddToCartKafkaDeserializer.class)
                         .withStartupPosition(KafkaIngressStartupPosition.fromLatest())
                         .build();
         binder.bindIngress(addToCartIngress);
@@ -44,57 +47,51 @@ public class EmbeddedModule implements StatefulFunctionModule {
         binder.bindIngressRouter(Identifiers.ADD_TO_CART_INGRESS, (message, downstream) ->
                 downstream.forward(Identifiers.SHOPPING_CART_FUNCTION_TYPE, message.getUserId(), message));
 
+        IngressSpec<Checkout> checkoutIngress =
+                KafkaIngressBuilder.forIdentifier(Identifiers.CHECKOUT_INGRESS)
+                        .withKafkaAddress("localhost:9092")
+                        .withConsumerGroupId("my-group-id")
+                        .withTopic("checkout")
+                        .withDeserializer(Serialization.CheckoutKafkaDeserializer.class)
+                        .withStartupPosition(KafkaIngressStartupPosition.fromLatest())
+                        .build();
+        binder.bindIngress(checkoutIngress);
+        // Route incoming checkout ingress to the Shopping Cart function for the given user Id
+        binder.bindIngressRouter(Identifiers.CHECKOUT_INGRESS, (message, downstream) ->
+                downstream.forward(Identifiers.SHOPPING_CART_FUNCTION_TYPE, message.getUserId(), message));
+
+        IngressSpec<RestockItem> restockIngress =
+                KafkaIngressBuilder.forIdentifier(Identifiers.RESTOCK_INGRESS)
+                        .withKafkaAddress("localhost:9092")
+                        .withConsumerGroupId("my-group-id")
+                        .withTopic("restock")
+                        .withDeserializer(Serialization.RestockKafkaDeserializer.class)
+                        .withStartupPosition(KafkaIngressStartupPosition.fromLatest())
+                        .build();
+        binder.bindIngress(restockIngress);
+        // Route incoming restock ingress msgs to the Stock function for the given item id
+        binder.bindIngressRouter(Identifiers.RESTOCK_INGRESS, (message, downstream) ->
+                downstream.forward(Identifiers.STOCK_FUNCTION_TYPE, message.getItemId(), message));
+
         /* EGRESS SETUP */
         EgressSpec<AddToCart> addConfirmEgress =
                 KafkaEgressBuilder.forIdentifier(Identifiers.ADD_CONFIRM_EGRESS)
                         .withKafkaAddress("localhost:9092")
-                        .withSerializer(KafkaSerializer.class)
+                        .withSerializer(Serialization.AddToCartKafkaSerializer.class)
                         .build();
-         binder.bindEgress(addConfirmEgress);
+        binder.bindEgress(addConfirmEgress);
+
+        EgressSpec<Receipt> receiptEgress =
+                KafkaEgressBuilder.forIdentifier(Identifiers.RECEIPT_EGRESS)
+                        .withKafkaAddress("localhost:9092")
+                        .withSerializer(Serialization.ReceiptKafkaSerializer.class)
+                        .build();
+        binder.bindEgress(receiptEgress);
 
         /* FUNCTION SETUP */
         binder.bindFunctionProvider(Identifiers.SHOPPING_CART_FUNCTION_TYPE, unused -> new ShoppingCartFn());
         binder.bindFunctionProvider(Identifiers.STOCK_FUNCTION_TYPE, unused -> new StockFn());
     }
 
-    private static class KafkaDeserializer implements KafkaIngressDeserializer<AddToCart> {
 
-        @Override
-        public AddToCart deserialize(ConsumerRecord<byte[], byte[]> input) {
-            try{
-                Message.Builder msgBuilder = AddToCart.newBuilder();
-                String inputString = new String(input.value(), StandardCharsets.UTF_8);
-                JsonFormat.parser().merge(inputString, msgBuilder);
-                AddToCart.Builder addBuilder = (AddToCart.Builder) msgBuilder;
-                AddToCart msg = addBuilder.setPublishTimestamp(Long.toString(input.timestamp())).build();
-                return msg;
-            } catch(IOException e){
-                e.printStackTrace();
-                return null;
-            }
-        }
-    }
-
-    private static class KafkaSerializer implements KafkaEgressSerializer<AddToCart> {
-
-        private static final Logger LOG = LoggerFactory.getLogger(KafkaSerializer.class);
-
-        private static final String TOPIC = "add-confirm";
-
-        private final ObjectMapper mapper = new ObjectMapper();
-
-        @Override
-        public ProducerRecord<byte[], byte[]> serialize(AddToCart addToCart) {
-            try {
-                byte[] key = addToCart.getUserId().getBytes();
-                LOG.info("Serialized key: " + key);
-                byte[] value = JsonFormat.printer().print(addToCart).getBytes();
-                LOG.info("Serialized value: " + value);
-                return new ProducerRecord<>(TOPIC, key, value);
-            } catch (InvalidProtocolBufferException e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-    }
 }
