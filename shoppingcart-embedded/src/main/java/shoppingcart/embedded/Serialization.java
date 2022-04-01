@@ -9,8 +9,6 @@ import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import shoppingcart.embedded.protos.AddToCart;
 import shoppingcart.embedded.protos.Checkout;
 import shoppingcart.embedded.protos.Receipt;

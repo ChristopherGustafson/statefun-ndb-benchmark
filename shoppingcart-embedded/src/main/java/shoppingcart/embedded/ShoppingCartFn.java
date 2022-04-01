@@ -4,9 +4,7 @@ import org.apache.flink.statefun.sdk.Context;
 import org.apache.flink.statefun.sdk.StatefulFunction;
 import org.apache.flink.statefun.sdk.annotations.Persisted;
 import org.apache.flink.statefun.sdk.state.PersistedTable;
-import org.apache.flink.statefun.sdk.state.PersistedValue;
 
-import com.google.protobuf.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import shoppingcart.embedded.protos.AddToCart;
@@ -15,7 +13,6 @@ import shoppingcart.embedded.protos.ItemAvailability;
 import shoppingcart.embedded.protos.Receipt;
 import shoppingcart.embedded.protos.RequestItem;
 
-import java.util.Iterator;
 import java.util.Map;
 
 public class ShoppingCartFn implements StatefulFunction {

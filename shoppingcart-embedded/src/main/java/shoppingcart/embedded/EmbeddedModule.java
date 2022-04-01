@@ -2,30 +2,16 @@ package shoppingcart.embedded;
 
 import org.apache.flink.statefun.sdk.io.EgressSpec;
 import org.apache.flink.statefun.sdk.io.IngressSpec;
-import org.apache.flink.statefun.sdk.io.Router;
 import org.apache.flink.statefun.sdk.kafka.KafkaEgressBuilder;
-import org.apache.flink.statefun.sdk.kafka.KafkaEgressSerializer;
 import org.apache.flink.statefun.sdk.kafka.KafkaIngressBuilder;
-import org.apache.flink.statefun.sdk.kafka.KafkaIngressDeserializer;
 import org.apache.flink.statefun.sdk.kafka.KafkaIngressStartupPosition;
 import org.apache.flink.statefun.sdk.spi.StatefulFunctionModule;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
-import com.google.protobuf.util.JsonFormat;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import shoppingcart.embedded.protos.AddToCart;
 import shoppingcart.embedded.protos.Checkout;
 import shoppingcart.embedded.protos.Receipt;
 import shoppingcart.embedded.protos.RestockItem;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public class EmbeddedModule implements StatefulFunctionModule {
