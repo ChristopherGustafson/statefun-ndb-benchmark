@@ -270,8 +270,6 @@ jobmanager.execution.failover-strategy: region
 # Interval in milliseconds for refreshing the monitored directories.
 #historyserver.archive.fs.refresh-interval: 10000
 
-
-
 # NDB/Statefun config
 
 state.backend: ndb
@@ -284,3 +282,7 @@ execution.checkpointing.mode: EXACTLY_ONCE
 state.savepoints.dir: file:///tmp/flinksavepoints
 state.checkpoints.dir: file:///tmp/flinkcheckpoints
 classloader.parent-first-patterns.additional: org.apache.flink.statefun;org.apache.kafka;com.google.protobuf
+
+#heartbeat.rpc-failure-threshold: 1
+#heartbeat.interval: 10000
+#heartbeat.timeout: 10000

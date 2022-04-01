@@ -15,3 +15,5 @@ fabric.properties
 deployment/flink/build/
 
 *.iml
+
+../builds

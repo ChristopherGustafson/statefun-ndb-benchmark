@@ -33,10 +33,9 @@ sleep 60
 
 # Start data-stream-generator
 echo "${BenchmarkJobName}Starting data-stream-generator..."
-cd data-stream-generator
-source ./setEnvVariables.sh
-sbt -Djline.terminal=jline.UnsupportedTerminal run &
-cd ..
+cd data-stream-generator/src/main/resources/data-generation/
+python produce_events.py &
+cd ../../../../../
 
 # Let it run for 80 seconds
 sleep 80
@@ -46,11 +45,13 @@ sleep 80
 tm_pid=`ps -ef | grep TaskManagerRunner | awk '{ print $2 }' | head -n 1`
 kill -9 $tm_pid
 
+
+
 # Run another 60 seconds
 sleep 60
 
 # Stop data generator
-dg_pid=`ps -ef | grep UnsupportedTerminal | awk '{ print $2 }' | head -n 1`
+dg_pid=`ps -ef | grep python | awk '{ print $2 }' | head -n 1`
 kill -9 $dg_pid
 
 # Stop Flink-runtime
