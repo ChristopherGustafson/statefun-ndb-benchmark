@@ -17,3 +17,6 @@ deployment/flink/build/
 *.iml
 
 ../builds
+
+*.tar.gz
+*.tgz
