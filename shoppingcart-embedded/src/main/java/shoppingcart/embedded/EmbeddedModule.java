@@ -12,17 +12,27 @@ import shoppingcart.embedded.protos.Checkout;
 import shoppingcart.embedded.protos.Receipt;
 import shoppingcart.embedded.protos.RestockItem;
 
+import java.io.InputStream;
 import java.util.Map;
+import java.util.Properties;
 
 public class EmbeddedModule implements StatefulFunctionModule {
 
     @Override
     public void configure(Map<String, String> globalConfiguration, Binder binder) {
 
+        Properties prop = new Properties();
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("config.properties")){
+            prop.load(inputStream);
+        } catch(Exception e) {
+            e.printStackTrace();
+            return;
+        }
+        String kafkaAddress = prop.getProperty("bootstrap.servers");
         /* INGRESS SETUP */
         IngressSpec<AddToCart> addToCartIngress =
                 KafkaIngressBuilder.forIdentifier(Identifiers.ADD_TO_CART_INGRESS)
-                        .withKafkaAddress("localhost:9092")
+                        .withKafkaAddress(kafkaAddress)
                         .withConsumerGroupId("my-group-id")
                         .withTopic("add-to-cart")
                         .withDeserializer(Serialization.AddToCartKafkaDeserializer.class)
@@ -35,7 +45,7 @@ public class EmbeddedModule implements StatefulFunctionModule {
 
         IngressSpec<Checkout> checkoutIngress =
                 KafkaIngressBuilder.forIdentifier(Identifiers.CHECKOUT_INGRESS)
-                        .withKafkaAddress("localhost:9092")
+                        .withKafkaAddress(kafkaAddress)
                         .withConsumerGroupId("my-group-id")
                         .withTopic("checkout")
                         .withDeserializer(Serialization.CheckoutKafkaDeserializer.class)
@@ -48,7 +58,7 @@ public class EmbeddedModule implements StatefulFunctionModule {
 
         IngressSpec<RestockItem> restockIngress =
                 KafkaIngressBuilder.forIdentifier(Identifiers.RESTOCK_INGRESS)
-                        .withKafkaAddress("localhost:9092")
+                        .withKafkaAddress(kafkaAddress)
                         .withConsumerGroupId("my-group-id")
                         .withTopic("restock")
                         .withDeserializer(Serialization.RestockKafkaDeserializer.class)
@@ -62,14 +72,14 @@ public class EmbeddedModule implements StatefulFunctionModule {
         /* EGRESS SETUP */
         EgressSpec<AddToCart> addConfirmEgress =
                 KafkaEgressBuilder.forIdentifier(Identifiers.ADD_CONFIRM_EGRESS)
-                        .withKafkaAddress("localhost:9092")
+                        .withKafkaAddress(kafkaAddress)
                         .withSerializer(Serialization.AddToCartKafkaSerializer.class)
                         .build();
         binder.bindEgress(addConfirmEgress);
 
         EgressSpec<Receipt> receiptEgress =
                 KafkaEgressBuilder.forIdentifier(Identifiers.RECEIPT_EGRESS)
-                        .withKafkaAddress("localhost:9092")
+                        .withKafkaAddress(kafkaAddress)
                         .withSerializer(Serialization.ReceiptKafkaSerializer.class)
                         .build();
         binder.bindEgress(receiptEgress);
