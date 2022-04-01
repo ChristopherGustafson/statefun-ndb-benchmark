@@ -29,10 +29,14 @@ public class EmbeddedModule implements StatefulFunctionModule {
             return;
         }
         String kafkaAddress = prop.getProperty("bootstrap.servers");
+//        String saslMechanism = prop.getProperty("sasl.mechanism");
+//        String saslConfig = prop.getProperty("sasl.jaas.config");
         /* INGRESS SETUP */
         IngressSpec<AddToCart> addToCartIngress =
                 KafkaIngressBuilder.forIdentifier(Identifiers.ADD_TO_CART_INGRESS)
                         .withKafkaAddress(kafkaAddress)
+//                        .withProperty("sasl.mechanism", saslMechanism)
+//                        .withProperty("sasl.jaas.config", saslConfig)
                         .withConsumerGroupId("my-group-id")
                         .withTopic("add-to-cart")
                         .withDeserializer(Serialization.AddToCartKafkaDeserializer.class)
@@ -46,6 +50,8 @@ public class EmbeddedModule implements StatefulFunctionModule {
         IngressSpec<Checkout> checkoutIngress =
                 KafkaIngressBuilder.forIdentifier(Identifiers.CHECKOUT_INGRESS)
                         .withKafkaAddress(kafkaAddress)
+//                        .withProperty("sasl.mechanism", saslMechanism)
+//                        .withProperty("sasl.jaas.config", saslConfig)
                         .withConsumerGroupId("my-group-id")
                         .withTopic("checkout")
                         .withDeserializer(Serialization.CheckoutKafkaDeserializer.class)
@@ -59,6 +65,8 @@ public class EmbeddedModule implements StatefulFunctionModule {
         IngressSpec<RestockItem> restockIngress =
                 KafkaIngressBuilder.forIdentifier(Identifiers.RESTOCK_INGRESS)
                         .withKafkaAddress(kafkaAddress)
+//                        .withProperty("sasl.mechanism", saslMechanism)
+//                        .withProperty("sasl.jaas.config", saslConfig)
                         .withConsumerGroupId("my-group-id")
                         .withTopic("restock")
                         .withDeserializer(Serialization.RestockKafkaDeserializer.class)
@@ -73,6 +81,8 @@ public class EmbeddedModule implements StatefulFunctionModule {
         EgressSpec<AddToCart> addConfirmEgress =
                 KafkaEgressBuilder.forIdentifier(Identifiers.ADD_CONFIRM_EGRESS)
                         .withKafkaAddress(kafkaAddress)
+//                        .withProperty("sasl.mechanism", saslMechanism)
+//                        .withProperty("sasl.jaas.config", saslConfig)
                         .withSerializer(Serialization.AddToCartKafkaSerializer.class)
                         .build();
         binder.bindEgress(addConfirmEgress);
@@ -80,6 +90,8 @@ public class EmbeddedModule implements StatefulFunctionModule {
         EgressSpec<Receipt> receiptEgress =
                 KafkaEgressBuilder.forIdentifier(Identifiers.RECEIPT_EGRESS)
                         .withKafkaAddress(kafkaAddress)
+//                        .withProperty("sasl.mechanism", saslMechanism)
+//                        .withProperty("sasl.jaas.config", saslConfig)
                         .withSerializer(Serialization.ReceiptKafkaSerializer.class)
                         .build();
         binder.bindEgress(receiptEgress);
