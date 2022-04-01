@@ -9,7 +9,7 @@ import string
 
 
 time_periods = 20
-requests_per_period = 10000
+requests_per_period = 20000
 dirname = os.path.dirname(__file__)
 random.seed(datetime.now())
 
@@ -21,7 +21,7 @@ user_id_length = 12
 item_id_length = 8
 
 max_quantity = 10
-max_add_to_carts = 2
+max_add_to_carts = 4
 restock_amount = 200
 
 
@@ -116,7 +116,7 @@ for i in range(1, time_periods+1):
             # If it has not sent before, randomize how many adds before checkout and send add
             if requests_before_checkout is None:
                 cart_adds = random.randint(1, max_add_to_carts-1)
-                user_requests[user_id] = 1
+                user_requests[user_id] = cart_adds
                 send_add_to_cart(user_id)
             # If no requests left send checkout
             elif requests_before_checkout == 0:

@@ -1,0 +1,28 @@
+from kafka import KafkaProducer
+import os
+import time
+
+# TODO: Move to config file
+# Config parameters
+bootstrap_servers = "localhost:9092"
+add_to_cart_topic = "add-to-cart"
+checkout_topic = "checkout"
+restock_topic = "restock"
+time_periods = 20
+
+dirname = os.path.dirname(__file__)
+producer = KafkaProducer(bootstrap_servers=bootstrap_servers)
+
+while True:
+    for i in range(1, time_periods+1):
+        path = os.path.join(dirname, 'time{}/data.txt'.format(i))
+        file = open(path, 'r')
+        for line in file.readlines():
+            event = line.strip().split("=")
+            if "userId" in event[1] and "quantity" in event[1]:
+                producer.send(add_to_cart_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
+            elif "userId" in event[1]:
+                producer.send(checkout_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
+            else:
+                producer.send(restock_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
+            time.sleep(0.01)
