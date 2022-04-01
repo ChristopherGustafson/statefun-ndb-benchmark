@@ -10,28 +10,39 @@ Deployment scripts can be found in [``deployment``](/deployment).
 ### Local Deployment
 For local deployment, first copy your Flink build into the folder [``deployment/flink``](/deployment/flink), and name the folder `build`.
 
-
 ```shell
-cp -r <path-to-flink-build> /deployement/flink/build/
+cp -r <path-to-flink-build> /deployment/flink/build/
+```
+Build the data-stream-generator, output-consumer and statefun job
+```shell
+cp -r /deployment/local/build.sh
 ```
 
-Then, set the state bacckend to ndb or rocksdb by either of the following commands
-
+Set the state backend to ndb or rocksdb by either of the following commands
 ```shell
 ./deployment/local/set-ndb-backend.sh
 ```
-
 ```shell
 ./deployment/local/set-rocksdb-backend.sh
 ```
-
-Then run the following command
-
+Then generate the input data
+```shell
+python data-stream-generator/src/main/resources/data-generation/generate_data.py
+```
+Finally, run the benchmark
 ```shell
 ./deployment/local/run.sh
 ```
 
 ## Full Benchmark Setup
+
+### Prerequisites 
+For this benchmark pipeline, you will need:
+* Java
+* sbt
+* Maven
+* Jupyter Notebook (for evaluation)
+* Docker
 
 The following is all the procedures necessary to run the StateFun NDB Benchmark:
 1. Set up a RonDB cluster, make sure it is listening to the default port of 3306.
@@ -53,8 +64,8 @@ export LD_LIBRARY_PATH=`pwd`
 ```shell
 mvn clean install -DskipTests -Dscala-2.12
 ```
-7. Copy the build folder ``flink-rondb/flink-dist/target/flink-1.14.3-SNAPSHOT-bin/flink-1.14.3-SNAPSHOT`` into a the folder ``deployment/flink`` and rename it to ``build``
-8. Configure the Flink cluster by making sure that the following fields are set in 
+6. Copy the build folder ``flink-rondb/flink-dist/target/flink-1.14.3-SNAPSHOT-bin/flink-1.14.3-SNAPSHOT`` into a the folder ``deployment/flink`` and rename it to ``build``
+7. Configure the Flink cluster by making sure that the following fields are set in 
 [``deployment/flink/build/conf/flink-conf.yaml``](deployment/flink/build/conf/flink-conf.yaml):
 ```yaml
 # For NDB:
@@ -77,7 +88,7 @@ jobmanager.rpc.address: <address to Flink JobManager>
 jobmanager.rpc.port: <port to Flink JobManager>
 
 ```
-6. Run the Flink Cluster located at [deployment/builds/flink-build](../builds/flink-build)
+8. Run the Flink Cluster located at [deployment/builds/flink-build](../builds/flink-build)
 
 Run TaskManager
 ```shell
@@ -88,8 +99,32 @@ Run TaskManager
 ./deployment/builds/flink-build/bin/taskmanager.sh start
 ```
 
-7. Run the StateFun Runtime + Job;
+9. Build Data-generator, output-consumer and StateFun job
+```shell
+./deployment/local/build.sh
+```
 
+10.
+Run the StateFun Runtime + Job;
 ```shell
 ./deployment/flink/build/bin/flink run -c org.apache.flink.statefun.flink.core.StatefulFunctionsJob shoppingcart-embedded/target/shoppingcart-embedded-1.0-SNAPSHOT-jar-with-dependencies.jar
+```
+
+11. Generate input events:
+```shell
+python data-stream-generator/src/main/resources/data-generation/generate_data.py
+```
+
+12. Run Data Stream Generator
+```shell
+cd data-stream-generator
+source ./setEnvVariables.sh
+sbt run
+```
+
+13. When job has finished, run output-consumer:
+```shell
+cd output-consumer
+source ./setEnvVariables.sh
+sbt run
 ```
