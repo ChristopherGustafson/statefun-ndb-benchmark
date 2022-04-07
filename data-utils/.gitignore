@@ -1,0 +1,3 @@
+# Ignore generated data in git
+data/*
+output-data/*
