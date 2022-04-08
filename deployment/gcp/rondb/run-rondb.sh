@@ -17,7 +17,7 @@ NUM_REPLICAS=2
 VM_NAME=statefun-benchmark-rondb
 CLOUD=gcp
 INSTALL_ACTION=cluster
-DATA_NODE_BOOT_SIZE=64
+DATA_NODE_BOOT_SIZE=256
 OS_IMAGE=centos-7-v20210401
 ZONE=3
 ./deployment/gcp/rondb-cloud-installer.sh \
