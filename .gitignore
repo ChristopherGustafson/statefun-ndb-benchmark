@@ -20,3 +20,7 @@ deployment/flink/build/
 
 *.tar.gz
 *.tgz
+output-data/*.json
+.tmp
+temp
+evaluator/.ipynb_checkpoints/
