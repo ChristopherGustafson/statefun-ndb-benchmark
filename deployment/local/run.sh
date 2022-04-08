@@ -7,38 +7,55 @@ docker stop kafka
 docker rm kafka
 docker stop zookeeper
 docker rm zookeeper
+# Clear old Flink cluster logs
 
 export BenchmarkJobName="BenchmarkJob: "
 
 echo "${BenchmarkJobName}Starting Kafka..."
 ./kafka-cluster-tools/setup-kafka.sh
+# Wait for startup
+echo "${BenchmarkJobName}Waiting for Kafka startup..."
+sleep 10
 
 # Start Flink Cluster, expects Flink build to available at /deployment/flink/build
 echo "${BenchmarkJobName}Starting Flink Cluster..."
 ./deployment/flink/build/bin/start-cluster.sh
 # Wait for startup
-sleep 10
+echo "${BenchmarkJobName}Waiting for Flink startup..."
+sleep 20
 
 # Start StateFun-runtime
 echo "${BenchmarkJobName}Starting StateFun runtime..."
 ./deployment/flink/build/bin/flink run -c org.apache.flink.statefun.flink.core.StatefulFunctionsJob shoppingcart-embedded/target/shoppingcart-embedded-1.0-SNAPSHOT-jar-with-dependencies.jar &
 # Wait for startup
-sleep 10
+echo "${BenchmarkJobName}Waiting for StateFun startup..."
+sleep 20
 
 # Start data-stream-generator
 echo "${BenchmarkJobName}Starting data-stream-generator..."
-cd data-stream-generator
-source ./setEnvVariables.sh
-sbt run
+cd data-utils
+python produce_events.py &
 cd ..
+
+# Let it run for 160 seconds
+sleep 160
+
+# Stop data generator
+pkill -f produce_events.py
 
 # Stop Flink-runtime
 ./deployment/flink/build/bin/stop-cluster.sh
 
 # Run output consumer
-echo "${BenchmarkJobName}Starting output consumer..."
-cd output-consumer
-source ./setEnvVariables.sh
-sbt run
+# Start data-stream-generator
+echo "${BenchmarkJobName}Starting data-stream-generator..."
+cd data-utils
+python output_consumer.py &
+cd ..
+
+# Run for 60 seconds
+# Stop output consumer
+pkill -f output_consumer.py
+
 
 

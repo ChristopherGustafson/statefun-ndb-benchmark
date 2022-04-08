@@ -22,44 +22,50 @@ echo "${BenchmarkJobName}Starting Flink Cluster..."
 ./deployment/flink/build/bin/start-cluster.sh
 # Wait for startup
 echo "${BenchmarkJobName}Waiting for Flink startup..."
-sleep 30
+sleep 20
 
 # Start StateFun-runtime
 echo "${BenchmarkJobName}Starting StateFun runtime..."
 ./deployment/flink/build/bin/flink run -c org.apache.flink.statefun.flink.core.StatefulFunctionsJob shoppingcart-embedded/target/shoppingcart-embedded-1.0-SNAPSHOT-jar-with-dependencies.jar &
 # Wait for startup
 echo "${BenchmarkJobName}Waiting for StateFun startup..."
-sleep 60
+sleep 20
 
 # Start data-stream-generator
 echo "${BenchmarkJobName}Starting data-stream-generator..."
-cd data-stream-generator
-source ./setEnvVariables.sh
-sbt -Djline.terminal=jline.UnsupportedTerminal run &
+cd data-utils
+python produce_events.py &
 cd ..
 
 # Let it run for 80 seconds
 sleep 80
 
 # Kill one task manager
-# ./deployment/flink/build/bin/taskmanager.sh stop
+#./deployment/flink/build/bin/taskmanager.sh start
+echo "Killing one TaskManager..."
+#./deployment/flink/build/bin/taskmanager.sh stop
 tm_pid=`ps -ef | grep TaskManagerRunner | awk '{ print $2 }' | head -n 1`
 kill -9 $tm_pid
 
 # Run another 60 seconds
-sleep 60
+sleep 80
 
 # Stop data generator
-dg_pid=`ps -ef | grep UnsupportedTerminal | awk '{ print $2 }' | head -n 1`
-kill -9 $dg_pid
+pkill -f produce_events.py
 
 # Stop Flink-runtime
 ./deployment/flink/build/bin/stop-cluster.sh
 
 # Run output consumer
-echo "${BenchmarkJobName}Starting output consumer..."
-cd output-consumer
-source ./setEnvVariables.sh
-sbt run
+# Start data-stream-generator
+echo "${BenchmarkJobName}Starting data-stream-generator..."
+cd data-utils
+python output_consumer.py &
+cd ..
+
+# Run for 60 seconds
+# Stop output consumer
+pkill -f output_consumer.py
+
 
 
