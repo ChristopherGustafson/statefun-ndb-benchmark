@@ -1,8 +1,0 @@
-/target/
-/.idea/
-/data-stream-generator.ipr
-/data-stream-generator.iws
-/project/target/
-/project/project/
-
-src/main/resources/data-generation/time*
