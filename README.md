@@ -7,16 +7,23 @@ and adapted to fit Stateful Serverless functions.
 ## Deployment
 Deployment scripts can be found in [``deployment``](/deployment).
 
-### Local Deployment
-For local deployment, first copy your Flink build into the folder [``deployment/flink``](/deployment/flink), and name the folder `build`.
+### Deployment Prerequisites
+The following prerequisites are necessary for both local and cloud deployment.
 
+Before running the benchmark the input data must be generated. You can generate the data yourself by running:
+```shell
+python data-utils/generate_data.py
+```
+The benchmark requires a packaged Flink build to run. Copy your own Flink build into the folder [``deployment/flink``](/deployment/flink), and name the folder `build`.
+Instructions of how to build Flink can be found [here](https://github.com/apache/flink).
 ```shell
 cp -r <path-to-flink-build> /deployment/flink/build/
 ```
-Build the data-stream-generator, output-consumer and statefun job
-```shell
-cp -r /deployment/local/build.sh
-```
+
+
+### Local Deployment
+
+The local benchmark assumes that a RonDB cluster is running at ``localhost:3306``.
 
 Set the state backend to ndb or rocksdb by either of the following commands
 ```shell
@@ -25,21 +32,27 @@ Set the state backend to ndb or rocksdb by either of the following commands
 ```shell
 ./deployment/local/set-rocksdb-backend.sh
 ```
-Then generate the input data
-```shell
-python data-stream-generator/src/main/resources/data-generation/generate_data.py
-```
-Finally, run the benchmark
+Run the benchmark
 ```shell
 ./deployment/local/run.sh
 ```
 
+### GCP Deployment
+Before running the benchmark in GCP [install the GCP CLI](https://cloud.google.com/sdk/gcloud) and initialize your environment using:
+```shell
+gcloud init
+```
+Then, run the benchmarks in GCP using:
+```shell
+./deployment/gcp/run.sh
+```
+
 ## Full Benchmark Setup
+The following is a description of the complete benchmark. This workflow is automated by the ``run.sh`` scripts above.
 
 ### Prerequisites 
 For this benchmark pipeline, you will need:
 * Java
-* sbt
 * Maven
 * Jupyter Notebook (for evaluation)
 * Docker
@@ -88,43 +101,38 @@ jobmanager.rpc.address: <address to Flink JobManager>
 jobmanager.rpc.port: <port to Flink JobManager>
 
 ```
-8. Run the Flink Cluster located at [deployment/builds/flink-build](../builds/flink-build)
-
-Run TaskManager
+8. Run the JobManager
 ```shell
 ./deployment/builds/flink-build/bin/jobmanager.sh start
 ```
-Run TaskManager
+9. Run one or more TaskManagers
 ```shell
 ./deployment/builds/flink-build/bin/taskmanager.sh start
 ```
 
-9. Build Data-generator, output-consumer and StateFun job
+10. Build StateFun job
 ```shell
 ./deployment/local/build.sh
 ```
 
-10.
-Run the StateFun Runtime + Job;
+10. Run the StateFun Runtime + Job;
 ```shell
 ./deployment/flink/build/bin/flink run -c org.apache.flink.statefun.flink.core.StatefulFunctionsJob shoppingcart-embedded/target/shoppingcart-embedded-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
 
 11. Generate input events:
 ```shell
-python data-stream-generator/src/main/resources/data-generation/generate_data.py
+python data-utils/generate_data.py
 ```
 
 12. Run Data Stream Generator
 ```shell
-cd data-stream-generator
-source ./setEnvVariables.sh
-sbt run
+python data-utils/produce_events.py
 ```
 
 13. When job has finished, run output-consumer:
 ```shell
-cd output-consumer
-source ./setEnvVariables.sh
-sbt run
+python data-utils/output_consumer.py
 ```
+
+14. Produce output plots using the Jupyter Notebook in the ``evaluator`` folder, setting the correct filepaths at the top of the notebook.
