@@ -57,11 +57,11 @@ taskmanager.memory.process.size: 1728m
 
 # The number of task slots that each TaskManager offers. Each slot runs one parallel pipeline.
 
-taskmanager.numberOfTaskSlots: 3
+taskmanager.numberOfTaskSlots: 2
 
 # The parallelism used for programs that did not specify and other parallelism.
 
-parallelism.default: 3
+parallelism.default: 1
 
 # The default file system scheme and authority.
 # 
@@ -281,7 +281,9 @@ execution.checkpointing.mode: EXACTLY_ONCE
 state.savepoints.dir: file:///tmp/flinksavepoints
 state.checkpoints.dir: file:///tmp/flinkcheckpoints
 classloader.parent-first-patterns.additional: org.apache.flink.statefun;org.apache.kafka;com.google.protobuf
-#
-#heartbeat.rpc-failure-threshold: 1
-#heartbeat.interval: 10000
-#heartbeat.timeout: 10000
+
+cluster.evenly-spread-out-slots: true
+
+heartbeat.rpc-failure-threshold: 1
+heartbeat.interval: 1000
+heartbeat.timeout: 5000

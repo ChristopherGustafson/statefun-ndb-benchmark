@@ -1,10 +1,12 @@
 from kafka import KafkaProducer
 import os
 import time
+import configparser
 
-# TODO: Move to config file
 # Config parameters
-bootstrap_servers = "localhost:9092"
+config = configparser.RawConfigParser()
+config.read('config.properties')
+bootstrap_servers = config.get("Config", "bootstrap.servers")
 add_to_cart_topic = "add-to-cart"
 checkout_topic = "checkout"
 restock_topic = "restock"
@@ -26,4 +28,3 @@ while True:
                 producer.send(checkout_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
             else:
                 producer.send(restock_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
-            time.sleep(0.001)
