@@ -7,5 +7,22 @@ usual, but make the following changes to the file ``cluster-defns/rondb-installa
 
 Then, rerun the installation script from the head node:
 ```shell
-nohup ./bin/karamel -headless -launch ../cluster-defns/rondb-installation.yml > ../installation.log &
+nohup ./karamel-0.6/bin/karamel -headless -launch ../cluster-defns/rondb-installation.yml > ../installation.log &
 ```
+
+To interact with the cluster mysql client, ssh to the API node and run
+```shell
+sudo su
+/srv/hops/mysql-cluster/ndb/scripts/mysql-client.sh
+```
+
+To initialize the necessary database and tables for this benchmark, run the following.
+
+```shell
+gcloud compute scp deployment/gcp/rondb/init_db.sql $RONDB_API_NAME:~
+gcloud compute ssh $RONDB_API_NAME
+ssh> sudo su
+ssh> /srv/hops/mysql-cluster/ndb/scripts/mysql-client.sh
+mysql> source init_db.sql;
+```
+ 

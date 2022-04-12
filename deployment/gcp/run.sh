@@ -10,6 +10,10 @@ export GCP_IMAGE=ubuntu-minimal-2004-focal-v20220406
 export GCP_IMAGE_PROJECT=ubuntu-os-cloud
 export GCP_MACHINE_TYPE=e2-standard-2
 
+# RonDB config
+export HEAD_INSTANCE_TYPE=n2-standard-2
+export DATA_NODE_INSTANCE_TYPE=n2-standard-2
+export API_NODE_INSTANCE_TYPE=n2-standard-2
 # Kafka config
 export KAFKA_NAME=${NAME_PREFIX}kafka
 export KAFKA_DOCKER_IMAGE=wurstmeister/kafka:2.12-2.1.1
@@ -17,20 +21,46 @@ export KAFKA_DOCKER_IMAGE=wurstmeister/kafka:2.12-2.1.1
 # Flink config
 export JOBMANAGER_NAME=${NAME_PREFIX}jobmanager
 export TASKMANAGER_NAME=${NAME_PREFIX}taskmanager
-# Set state backend, should be either 'ndb' or 'rocksdb'
-export N_WORKERS="${1:-1}"
-export STATE_BACKEND="${2:-"rocksdb"}"
 
 # Data utils config
 export DATA_UTILS_NAME=${NAME_PREFIX}data-utils
 
-echo "Running StateFun Rondb benchmark with $N_WORKERS TaskManagers"
+# User defined config
+export FLINK_WORKERS="${1:-1}"
+export STATE_BACKEND="${2:-"rocksdb"}"
+export RONDB_WORKERS="${3:-2}"
+
+
+echo "Running StateFun Rondb benchmark with $FLINK_WORKERS TaskManagers, $STATE_BACKEND backend ($RONDB_WORKERS RonDB workers if used)"
 
 # *
 # ************** RONDB SETUP **************
 # *
-# echo "Running and setting up RonDB cluster"
-# RONDB_ADDRESS=`gcloud compute instances describe statefun-benchmark-rondbhead --format='get(networkInterfaces[0].networkIP)'`
+if [ "$STATE_BACKEND" = "ndb" ];
+then
+#  echo "Running and setting up RonDB cluster"
+#  ./deployment/gcp/rondb/rondb-cloud-installer.sh \
+#  --non-interactive \
+#  --cloud gcp \
+#  --install-action cluster \
+#  --vm-name-prefix $NAME_PREFIX \
+#  --gcp-head-instance-type $HEAD_INSTANCE_TYPE \
+#  --gcp-data-node-instance-type $DATA_NODE_INSTANCE_TYPE \
+#  --gcp-api-node-instance-type $API_NODE_INSTANCE_TYPE \
+#  --num-data-nodes RONDB_WORKERS \
+#  --num-api-nodes 1 \
+#  --num-replicas 2 \
+#  --availability-zone 3 \
+#  --database-node-boot-size 256
+
+  RONDB_HEAD_NAME=${NAME_PREFIX}head
+  RONDB_API_NAME=${NAME_PREFIX}api00
+  RONDB_DATA_NAME=${NAME_PREFIX}cpu00
+
+  RONDB_HEAD_ADDRESS=`gcloud compute instances describe $RONDB_HEAD_NAME --format='get(networkInterfaces[0].networkIP)'`
+  RONDB_API_ADDRESS=`gcloud compute instances describe $RONDB_API_NAME --format='get(networkInterfaces[0].networkIP)'`
+  RONDB_DATA_ADDRESS=`gcloud compute instances describe $RONDB_DATA_NAME --format='get(networkInterfaces[0].networkIP)'`
+fi
 
 # *
 # ************** KAFKA SETUP **************
@@ -82,13 +112,13 @@ then
   echo "Setting state backend to NDB"
   cp deployment/gcp/flink/ndb_flink-conf.yaml.tmpl deployment/flink/build/conf/flink-conf.yaml
   echo "
-  state.backend.ndb.connectionstring: $RONDB_ADDRESS
+  state.backend.ndb.connectionstring: $RONDB_HEAD_ADDRESS
   " >> deployment/flink/build/conf/flink-conf.yaml
 fi
 
 echo "
 jobmanager.rpc.address: $JOBMANAGER_ADDRESS
-parallelism.default: $N_WORKERS
+parallelism.default: $FLINK_WORKERS
 state.savepoints.dir: file:///tmp/flinksavepoints
 state.checkpoints.dir: file:///tmp/flinkcheckpoints
 " >> deployment/flink/build/conf/flink-conf.yaml
@@ -99,7 +129,7 @@ gcloud compute scp flink.tar.gz $JOBMANAGER_NAME:~
 gcloud compute ssh $JOBMANAGER_NAME -- bash -s < deployment/gcp/flink/jobmanager_setup.sh
 
 echo "Creating VMs for TaskManagers"
-for i in $(seq 1 $N_WORKERS)
+for i in $(seq 1 $FLINK_WORKERS)
 do
   WORKER_NAME="$TASKMANAGER_NAME-$i"
   echo "Setting up $WORKER_NAME"
@@ -109,7 +139,7 @@ done
 # Sleep to let vm start properly
 sleep 40
 echo "Initializing TaskManagers"
-for i in $(seq 1 $N_WORKERS)
+for i in $(seq 1 $FLINK_WORKERS)
 do
   WORKER_NAME="$TASKMANAGER_NAME-$i"
   gcloud compute scp flink.tar.gz $WORKER_NAME:~
@@ -148,7 +178,7 @@ echo "Deleting VM instances"
 gcloud compute instances delete $JOBMANAGER_NAME --quiet
 gcloud compute instances delete $KAFKA_NAME --quiet
 gcloud compute instances delete $DATA_UTILS_NAME --quiet
-for i in $(seq 1 $N_WORKERS);
+for i in $(seq 1 $FLINK_WORKERS);
 do
   WORKER_NAME="$TASKMANAGER_NAME-$i"
   gcloud compute instances delete $WORKER_NAME --quiet
