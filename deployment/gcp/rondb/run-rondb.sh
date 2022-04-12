@@ -12,15 +12,15 @@ HEAD_INSTANCE_TYPE=n2-standard-2
 DATA_NODE_INSTANCE_TYPE=n2-standard-2
 API_NODE_INSTANCE_TYPE=n2-standard-2
 NUM_DATA_NODES=2
-NUM_API_NODES=2
+NUM_API_NODES=1
 NUM_REPLICAS=2
 VM_NAME=statefun-benchmark-rondb
 CLOUD=gcp
 INSTALL_ACTION=cluster
 DATA_NODE_BOOT_SIZE=256
-OS_IMAGE=centos-7-v20210401
+OS_IMAGE=centos-7-v20220406
 ZONE=3
-./deployment/gcp/rondb-cloud-installer.sh \
+./deployment/gcp/rondb/rondb-cloud-installer.sh \
 --non-interactive \
 --cloud $CLOUD \
 --install-action $INSTALL_ACTION \
@@ -32,8 +32,8 @@ ZONE=3
 --num-api-nodes $NUM_API_NODES \
 --num-replicas $NUM_REPLICAS \
 --availability-zone $ZONE \
---database-node-boot-size $DATA_NODE_BOOT_SIZE
-#--os-image $OS_IMAGE
+--database-node-boot-size $DATA_NODE_BOOT_SIZE \
+--os-image $OS_IMAGE
 #--debug \
 
 

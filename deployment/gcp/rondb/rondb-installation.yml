@@ -1,0 +1,76 @@
+name: RonDBHead
+baremetal:
+  username: farah
+
+cookbooks:
+  hopsworks:
+    github: logicalclocks/hopsworks-chef
+    branch: 2.5
+
+attrs:
+  install:
+    cloud: gcp
+  services:
+    enabled: true
+  kagent:
+    enabled: false
+#  hopsmonitor:
+#    rondb: true
+#  consul:
+#    security: false
+  mysql:
+    password: b112083a
+  ndb:
+    num_ndb_open_slots: 100
+    NoOfReplicas: 2
+
+
+groups:
+  metaserver:
+    size: 1
+    baremetal:
+      ip: 10.132.0.69
+    recipes:
+      - ndb::mgmd
+      - ndb::bench
+#      - hopsmonitor::prometheus
+#      - hopsmonitor::grafana
+#      - hopsmonitor::alertmanager
+#      - consul::master
+
+  worker0:
+    size: 1
+    baremetal:
+      ip: 10.132.0.71
+    recipes:
+      - ndb::ndbd
+#      - hopsmonitor::node_exporter
+#      - consul::slave
+  worker1:
+    size: 1
+    baremetal:
+      ip: 10.132.0.73
+    recipes:
+      - ndb::ndbd
+#      - hopsmonitor::node_exporter
+#      - consul::slave
+  worker2:
+    size: 1
+    baremetal:
+      ip: 10.132.0.74
+    recipes:
+      - ndb::mysqld
+      - ndb::mysqld_exporter
+#      - hopsmonitor::node_exporter
+      - ndb::bench
+#      - consul::slave
+  worker3:
+    size: 1
+    baremetal:
+      ip: 10.132.0.76
+    recipes:
+      - ndb::mysqld
+      - ndb::mysqld_exporter
+#       - hopsmonitor::node_exporter
+      - ndb::bench
+#      - consul::slave
