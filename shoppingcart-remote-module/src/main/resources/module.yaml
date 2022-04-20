@@ -1,0 +1,26 @@
+kind: io.statefun.endpoints.v2/http
+spec:
+  functions: shoppingcart-remote/*
+  urlPathTemplate: http://0.0.0.0:1108/
+  transport:
+    type: io.statefun.transports.v1/async
+---
+kind: io.statefun.kafka.v1/egress
+spec:
+  id: shoppingcart-remote/add-confirm
+  address: localhost:9092
+  deliverySemantic:
+    type: exactly-once
+    transactionTimeout: 15min
+  properties:
+    - transaction.timeout.ms: 7200000
+---
+kind: io.statefun.kafka.v1/egress
+spec:
+  id: shoppingcart-remote/receipt
+  address: localhost:9092
+  deliverySemantic:
+    type: exactly-once
+    transactionTimeout: 15min
+  properties:
+    - transaction.timeout.ms: 7200000
