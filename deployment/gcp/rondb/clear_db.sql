@@ -1,3 +1,5 @@
+USE flinkndb;
+
 DELETE FROM key_value_state;
 DELETE FROM key_value_state_committed;
 DELETE FROM key_value_state_snapshot;

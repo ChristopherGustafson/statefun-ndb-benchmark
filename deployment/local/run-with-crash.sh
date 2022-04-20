@@ -38,7 +38,7 @@ python produce_events.py &
 cd ..
 
 # Let it run for 80 seconds
-sleep 80
+sleep 30
 
 # Kill one task manager
 #./deployment/flink/build/bin/taskmanager.sh start
@@ -48,7 +48,7 @@ tm_pid=`ps -ef | grep TaskManagerRunner | awk '{ print $2 }' | head -n 1`
 kill -9 $tm_pid
 
 # Run another 60 seconds
-sleep 80
+sleep 60
 
 # Stop data generator
 pkill -f produce_events.py
@@ -58,12 +58,13 @@ pkill -f produce_events.py
 
 # Run output consumer
 # Start data-stream-generator
-echo "${BenchmarkJobName}Starting data-stream-generator..."
+echo "${BenchmarkJobName}Starting output consumer..."
 cd data-utils
 python output_consumer.py &
 cd ..
 
 # Run for 60 seconds
+sleep 30
 # Stop output consumer
 pkill -f output_consumer.py
 

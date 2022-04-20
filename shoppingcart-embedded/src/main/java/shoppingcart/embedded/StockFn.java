@@ -20,7 +20,7 @@ public class StockFn implements StatefulFunction {
 
     @Override
     public void invoke(Context context, Object input) {
-        int currentStock = STOCK.getOrDefault(300);
+        int currentStock = STOCK.getOrDefault(100000);
         if(input instanceof RequestItem){
             RequestItem request = (RequestItem) input;
             final int requestQuantity = request.getQuantity();

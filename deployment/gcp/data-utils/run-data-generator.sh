@@ -2,7 +2,7 @@
 
 cd data-utils
 python3 produce_events.py &
-sleep 60
+sleep 300
 pkill -f produce_events.py
 
 exit 0

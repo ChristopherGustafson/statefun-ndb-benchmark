@@ -28,3 +28,4 @@ while True:
                 producer.send(checkout_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
             else:
                 producer.send(restock_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
+            time.sleep(0.001)
