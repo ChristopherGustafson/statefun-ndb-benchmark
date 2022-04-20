@@ -169,23 +169,52 @@ then
 
   echo "Running StateFun runtime"
   gcloud compute scp shoppingcart-embedded/target/shoppingcart-embedded-1.0-SNAPSHOT-jar-with-dependencies.jar $JOBMANAGER_NAME:~
-  gcloud compute ssh $JOBMANAGER_NAME -- bash -s < deployment/gcp/flink/run_statefun.sh &
+  gcloud compute ssh $JOBMANAGER_NAME -- bash -s < deployment/gcp/flink/run_statefun_embedded.sh &
 else
-  echo "bootstrap.servers=$KAFKA_ADDRESS:9092" > shoppingcart-remote/src/main/resources/config.properties
-  echo "bootstrap.servers=$KAFKA_ADDRESS:9092" > shoppingcart-remote-module/src/main/resources/config.properties
-  (cd shoppingcart-remote/;mvn clean package)
-  (cd shoppingcart-remote-module/;mvn clean package)
-
   echo "Creating VM for remote functions"
   gcloud compute instances create $REMOTE_FUNCTIONS_NAME --image=$GCP_IMAGE --image-project=$GCP_IMAGE_PROJECT --machine-type=$GCP_MACHINE_TYPE --tags http-server,https-server
   sleep 40
+  REMOTE_FUNCTIONS_ADDRESS=`gcloud compute instances describe $REMOTE_FUNCTIONS_NAME --format='get(networkInterfaces[0].networkIP)'`
+
+  echo "bootstrap.servers=$KAFKA_ADDRESS:9092" > shoppingcart-remote/src/main/resources/config.properties
+  echo "bootstrap.servers=$KAFKA_ADDRESS:9092" > shoppingcart-remote-module/src/main/resources/config.properties
+  echo "kind: io.statefun.endpoints.v2/http
+spec:
+  functions: shoppingcart-remote/*
+  urlPathTemplate: http://$REMOTE_FUNCTIONS_ADDRESS:1108/
+  transport:
+    type: io.statefun.transports.v1/async
+---
+kind: io.statefun.kafka.v1/egress
+spec:
+  id: shoppingcart-remote/add-confirm
+  address: $KAFKA_ADDRESS:9092
+  deliverySemantic:
+    type: exactly-once
+    transactionTimeout: 15min
+  properties:
+    - transaction.timeout.ms: 7200000
+---
+kind: io.statefun.kafka.v1/egress
+spec:
+  id: shoppingcart-remote/receipt
+  address: $KAFKA_ADDRESS:9092
+  deliverySemantic:
+    type: exactly-once
+    transactionTimeout: 15min
+  properties:
+    - transaction.timeout.ms: 7200000
+" > shoppingcart-remote-module/src/main/resources/module.yaml
+  (cd shoppingcart-remote/;mvn clean package)
+  (cd shoppingcart-remote-module/;mvn clean package)
+
   echo "Running remote functions"
   gcloud compute scp shoppingcart-remote/target/shoppingcart-remote-1.0-SNAPSHOT-jar-with-dependencies.jar $REMOTE_FUNCTIONS_NAME:~
-  gcloud compute ssh $REMOTE_FUNCTIONS_NAME -- bash -s < deployment/gcp/flink/remote_functions_setup.sh
+  gcloud compute ssh $REMOTE_FUNCTIONS_NAME -- bash -s < deployment/gcp/flink/remote_functions_setup.sh &
 
   echo "Running StateFun runtime"
   gcloud compute scp shoppingcart-remote-module/target/shoppingcart-remote-module-1.0-SNAPSHOT-jar-with-dependencies.jar $JOBMANAGER_NAME:~
-  gcloud compute ssh $JOBMANAGER_NAME -- bash -s < deployment/gcp/flink/run_statefun.sh &
+  gcloud compute ssh $JOBMANAGER_NAME -- bash -s < deployment/gcp/flink/run_statefun_remote.sh &
 fi
 
 echo "Waiting for StateFun runtime startup"
@@ -210,12 +239,12 @@ gcloud compute scp $DATA_UTILS_NAME:~/data-utils/output-data/data.json output-da
 
 # Clean up
 echo "Deleting VM instances"
-gcloud compute instances delete $JOBMANAGER_NAME --quiet
-gcloud compute instances delete $KAFKA_NAME --quiet
-gcloud compute instances delete $DATA_UTILS_NAME --quiet
-gcloud compute instances delete $REMOTE_FUNCTIONS_NAME --quiet
-for i in $(seq 1 $FLINK_WORKERS);
-do
-  WORKER_NAME="$TASKMANAGER_NAME-$i"
-  gcloud compute instances delete $WORKER_NAME --quiet
-done
+#gcloud compute instances delete $JOBMANAGER_NAME --quiet
+#gcloud compute instances delete $KAFKA_NAME --quiet
+#gcloud compute instances delete $DATA_UTILS_NAME --quiet
+#gcloud compute instances delete $REMOTE_FUNCTIONS_NAME --quiet
+#for i in $(seq 1 $FLINK_WORKERS);
+#do
+#  WORKER_NAME="$TASKMANAGER_NAME-$i"
+#  gcloud compute instances delete $WORKER_NAME --quiet
+#done
