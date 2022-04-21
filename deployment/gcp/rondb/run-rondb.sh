@@ -17,7 +17,7 @@ NUM_REPLICAS=2
 VM_NAME=statefun-benchmark-
 CLOUD=gcp
 INSTALL_ACTION=cluster
-DATA_NODE_BOOT_SIZE=256
+DATA_NODE_BOOT_SIZE=64
 OS_IMAGE=centos-7-v20220406
 ZONE=3
 ./deployment/gcp/rondb/rondb-cloud-installer.sh \
@@ -34,3 +34,8 @@ ZONE=3
 --availability-zone $ZONE \
 --database-node-boot-size $DATA_NODE_BOOT_SIZE
 #--debug \
+
+sleep 300
+gcloud compute scp deployment/gcp/rondb/init_db.sql ${VM_NAME}api00:~
+gcloud compute ssh ${VM_NAME}api00 -- bash -s < deployment/gcp/rondb/initialize-tables.sh
+
