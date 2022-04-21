@@ -56,9 +56,9 @@ final class StockFn implements StatefulFunction {
       final int newQuantity = quantity + restock.getQuantity();
       storage.set(STOCK, newQuantity);
 
-//      System.out.println("---");
-//      System.out.println("Received Restock for itemId " + context.self().id());
-//      System.out.println("---");
+      System.out.println("---");
+      System.out.println("Received Restock for itemId " + context.self().id());
+      System.out.println("---");
       return context.done();
     }
     else if (message.is(REQUEST_ITEM_TYPE)) {
@@ -77,9 +77,9 @@ final class StockFn implements StatefulFunction {
       }
       ItemAvailability itemAvailability = builder.build();
 
-//      System.out.println("---");
-//      System.out.println("Received ItemRequest from userId " + context.caller().get().id() + " and quantity " + requestQuantity);
-//      System.out.println("---");
+      System.out.println("---");
+      System.out.println("Received ItemRequest from userId " + context.caller().get().id() + " and quantity " + requestQuantity);
+      System.out.println("---");
       context.send(
           MessageBuilder.forAddress(context.caller().get())
               .withCustomType(ITEM_AVAILABILITY_TYPE, itemAvailability)

@@ -73,9 +73,9 @@ final class ShoppingCartFn implements StatefulFunction {
               .setPublishTimestamp(addToCartMsg.getPublishTimestamp())
               .build();
 
-//      System.out.println("---");
-//      System.out.println("Received AddToCart for itemId " + addToCartMsg.getItemId() + " and quantity " + addToCartMsg.getQuantity());
-//      System.out.println("---");
+      System.out.println("---");
+      System.out.println("Received AddToCart for itemId " + addToCartMsg.getItemId() + " and quantity " + addToCartMsg.getQuantity());
+      System.out.println("---");
 
       final Message request =
           MessageBuilder.forAddress(StockFn.TYPE, addToCartMsg.getItemId())
@@ -117,9 +117,9 @@ final class ShoppingCartFn implements StatefulFunction {
                       .withValue(ADD_TO_CART_TYPE, addConfirm)
                       .build();
 
-//      System.out.println("---");
-//      System.out.println("Received AddConfirm for itemId " + addConfirm.getItemId() + " and quantity " + addConfirm.getQuantity());
-//      System.out.println("---");
+      System.out.println("---");
+      System.out.println("Received AddConfirm for itemId " + addConfirm.getItemId() + " and quantity " + addConfirm.getQuantity());
+      System.out.println("---");
       context.send(egressMessage);
       return context.done();
     }
@@ -153,9 +153,9 @@ final class ShoppingCartFn implements StatefulFunction {
                     .build();
             context.send(egressMessage);
 
-//            System.out.println("---");
-//            System.out.println("Received checkout for basket:\n" + items);
-//            System.out.println("---");
+            System.out.println("---");
+            System.out.println("Received checkout for basket:\n" + items);
+            System.out.println("---");
           });
     }
     return context.done();
