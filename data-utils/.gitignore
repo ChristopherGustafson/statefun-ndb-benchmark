@@ -1,3 +1,4 @@
 # Ignore generated data in git
 data/*
 ../output-data-1/output-data/*
+*.log

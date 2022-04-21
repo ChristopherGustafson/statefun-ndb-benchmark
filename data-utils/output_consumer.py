@@ -20,23 +20,21 @@ consumer = KafkaConsumer(
 dirname = os.path.dirname(__file__)
 path = os.path.join(dirname, 'output-data')
 os.mkdir(path)
-
+events_read = 0
 # Produce data file
 with open(path+'/data.json', 'w') as output_file:
     for msg in consumer:
-        msg_value = json.loads(msg.value)
+        events_read = events_read+1
+        try:
+            msg_value = json.loads(msg.value)
+        except:
+            print(f"Exception occurred when parsing json: {msg.value}")
+            pass
         event = {
             'inputKafkaTimestamp': msg_value["publishTimestamp"],
             'outputKafkaTimestamp': msg.timestamp
         }
         json.dump(event, output_file)
         output_file.write('\n')
-    # for i in range(10):
-    #     event = {
-    #         'inputKafkaTimestamp': "12345",
-    #         'outputKafkaTimestamp': "12345"
-    #     }
-    #     json.dump(event, output_file)
-    #     output_file.write('\n')
 
 
