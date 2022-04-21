@@ -57,7 +57,8 @@ then
   ./deployment/flink/build/bin/flink run -c org.apache.flink.statefun.flink.core.StatefulFunctionsJob shoppingcart-embedded/target/shoppingcart-embedded-1.0-SNAPSHOT-jar-with-dependencies.jar &
 else
   ./deployment/flink/build/bin/flink run -c org.apache.flink.statefun.flink.core.StatefulFunctionsJob shoppingcart-remote-module/target/shoppingcart-remote-module-1.0-SNAPSHOT-jar-with-dependencies.jar &
-  java -cp shoppingcart-remote/target/shoppingcart-remote-1.0-SNAPSHOT-jar-with-dependencies.jar shoppingcart.remote.Expose &
+  rm nohup.out
+  nohup java -cp shoppingcart-remote/target/shoppingcart-remote-1.0-SNAPSHOT-jar-with-dependencies.jar shoppingcart.remote.Expose &
 fi
 
 # Wait for startup
@@ -67,11 +68,20 @@ sleep 20
 # Start data-stream-generator
 echo "${BenchmarkJobName}Starting data-stream-generator..."
 cd data-utils
-python produce_events.py &
+rm event_producer.log
+nohup python3 -u produce_events.py > event_producer.log &
+cd ..
+
+# Start output-consumer
+echo "${BenchmarkJobName}Starting output consumer..."
+cd data-utils
+rm -rf output-data
+rm output_consumer.log
+nohup python3 -u output_consumer.py > output_consumer.log &
 cd ..
 
 # Let it run for 160 seconds
-sleep 80
+sleep 160
 
 if [ $CRASH -eq 1 ]
 then
@@ -83,11 +93,14 @@ then
   kill -9 $tm_pid
 fi
 
-sleep 80
+sleep 30
 
 # Stop data generator
 echo "Stopping data stream generator"
 pkill -f produce_events.py
+
+echo "Waiting to process last messages"
+sleep 100
 
 echo "Stopping flink runtime"
 # Stop Flink-runtime
@@ -95,19 +108,12 @@ echo "Stopping flink runtime"
 remote_pid=`ps -ef | grep shoppingcart.remote.Expose | awk '{ print $2 }' | head -n 1`
 kill -9 $remote_pid
 
-# Run output consumer
-# Start data-stream-generator
-echo "${BenchmarkJobName}Starting output consumer..."
-cd data-utils
-python output_consumer.py &
-cd ..
-
-# Run for 30 seconds
-sleep 30
-
 echo "${BenchmarkJobName}Stopping output consumer..."
 # Stop output consumer
 pkill -f output_consumer.py
 
 
+NOW="$(date +'%d-%m-%Y_%H:%M')"
+mkdir -p output-data/local/$NOW
+mv data-utils/output-data/data.json output-data/local/$NOW
 
