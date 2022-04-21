@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# USAGE: run.sh <N_FLINK_WORKERS> <ndb OR rocksdb> <N_RONDB_WORKERS> <eager OR lazy> <embedded OR remote>
+
 # Config variables
 
 # General Config
@@ -8,7 +10,7 @@ export NAME_PREFIX=statefun-benchmark-
 # GCP config
 export GCP_IMAGE=ubuntu-minimal-2004-focal-v20220406
 export GCP_IMAGE_PROJECT=ubuntu-os-cloud
-export GCP_MACHINE_TYPE=n2-standard-16
+export GCP_MACHINE_TYPE=n2-standard-4
 
 # RonDB config
 export HEAD_INSTANCE_TYPE=n2-standard-2
@@ -120,7 +122,7 @@ then
   echo "Setting state backend to NDB"
   cp deployment/gcp/flink/ndb_flink-conf.yaml.tmpl deployment/flink/build/conf/flink-conf.yaml
   echo "
-  state.backend.ndb.connectionstring: $RONDB_HEAD_ADDRESS
+state.backend.ndb.connectionstring: $RONDB_HEAD_ADDRESS
   " >> deployment/flink/build/conf/flink-conf.yaml
   if [ "$RECOVERY_METHOD" = "lazy" ];
   then
@@ -233,8 +235,8 @@ echo "Output Consumer Finished"
 
 # Copy data file to local
 NOW="$(date +'%d-%m-%Y_%H:%M')"
-mkdir -p output-data/$NOW/${STATE_BACKEND}${RECOVERY_METHOD}-${FLINK_WORKERS}-workers/
-gcloud compute scp $DATA_UTILS_NAME:~/data-utils/output-data/data.json output-data/$NOW/${STATE_BACKEND}${RECOVERY_METHOD}-${FLINK_WORKERS}-workers/
+mkdir -p output-data/$NOW/${STATE_BACKEND}${RECOVERY_METHOD}-${FLINK_WORKERS}-workers-${FUNCTION_TYPE}/
+gcloud compute scp $DATA_UTILS_NAME:~/data-utils/output-data/data.json output-data/$NOW/${STATE_BACKEND}-${RECOVERY_METHOD}-${FLINK_WORKERS}-workers-${FUNCTION_TYPE}/
 
 
 # Clean up

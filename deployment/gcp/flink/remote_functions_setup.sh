@@ -6,7 +6,7 @@ sudo apt-get -y install openjdk-8-jre
 sudo apt-get clean
 
 # Run Remote functions
-java -cp shoppingcart-remote-1.0-SNAPSHOT-jar-with-dependencies.jar shoppingcart.remote.Expose &
+nohup java -cp shoppingcart-remote-1.0-SNAPSHOT-jar-with-dependencies.jar shoppingcart.remote.Expose &
 
 
 
