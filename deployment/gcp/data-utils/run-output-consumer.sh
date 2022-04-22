@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd data-utils
-python3 output_consumer.py &
+nohup python3 -u output_consumer.py > output_consumer.log &
 sleep 300
 pkill -f output_consumer.py
 

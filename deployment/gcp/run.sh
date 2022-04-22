@@ -34,6 +34,7 @@ export STATE_BACKEND="${2:-"rocksdb"}"
 export RONDB_WORKERS="${3:-2}"
 export RECOVERY_METHOD="${4:-""}"
 export FUNCTION_TYPE="${5:-"embedded"}"
+export EVENTS_PER_SEC="${6:-"1000"}"
 
 echo "Running StateFun Rondb benchmark with $FLINK_WORKERS TaskManagers, $STATE_BACKEND backend ($RONDB_WORKERS RonDB workers if used), ($RECOVERY_METHOD recovery if used)"
 
@@ -95,6 +96,7 @@ sleep 40
 
 echo "[Config]
 bootstrap.servers = $KAFKA_ADDRESS:9092
+events_per_sec = $EVENTS_PER_SEC
 " > data-utils/config.properties
 tar -czvf data-utils.tar.gz data-utils
 gcloud compute scp data-utils.tar.gz $DATA_UTILS_NAME:~
@@ -236,17 +238,17 @@ echo "Output Consumer Finished"
 # Copy data file to local
 NOW="$(date +'%d-%m-%Y_%H:%M')"
 mkdir -p output-data/$NOW/${STATE_BACKEND}${RECOVERY_METHOD}-${FLINK_WORKERS}-workers-${FUNCTION_TYPE}/
-gcloud compute scp $DATA_UTILS_NAME:~/data-utils/output-data/data.json output-data/$NOW/${STATE_BACKEND}-${RECOVERY_METHOD}-${FLINK_WORKERS}-workers-${FUNCTION_TYPE}/
+gcloud compute scp $DATA_UTILS_NAME:~/data-utils/output-data/data.json output-data/$NOW/${STATE_BACKEND}-${RECOVERY_METHOD}-${FLINK_WORKERS}-workers-${FUNCTION_TYPE}
 
 
 # Clean up
 echo "Deleting VM instances"
-#gcloud compute instances delete $JOBMANAGER_NAME --quiet
-#gcloud compute instances delete $KAFKA_NAME --quiet
-#gcloud compute instances delete $DATA_UTILS_NAME --quiet
-#gcloud compute instances delete $REMOTE_FUNCTIONS_NAME --quiet
-#for i in $(seq 1 $FLINK_WORKERS);
-#do
-#  WORKER_NAME="$TASKMANAGER_NAME-$i"
-#  gcloud compute instances delete $WORKER_NAME --quiet
-#done
+gcloud compute instances delete $JOBMANAGER_NAME --quiet
+gcloud compute instances delete $KAFKA_NAME --quiet
+gcloud compute instances delete $DATA_UTILS_NAME --quiet
+gcloud compute instances delete $REMOTE_FUNCTIONS_NAME --quiet
+for i in $(seq 1 $FLINK_WORKERS);
+do
+ WORKER_NAME="$TASKMANAGER_NAME-$i"
+ gcloud compute instances delete $WORKER_NAME --quiet
+done
