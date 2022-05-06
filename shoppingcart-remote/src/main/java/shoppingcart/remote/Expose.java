@@ -40,12 +40,20 @@ public class Expose {
     StatefulFunctionSpec stockFn =
         StatefulFunctionSpec.builder(StockFn.TYPE)
             .withValueSpec(StockFn.STOCK)
+            .withValueSpec(StockFn.S1)
+            .withValueSpec(StockFn.S2)
+            .withValueSpec(StockFn.S3)
+            .withValueSpec(StockFn.S4)
             .withSupplier(StockFn::new)
             .build();
 
     StatefulFunctionSpec userShoppingCartFn =
         StatefulFunctionSpec.builder(ShoppingCartFn.TYPE)
             .withValueSpec(ShoppingCartFn.BASKET)
+            .withValueSpec(ShoppingCartFn.S1)
+            .withValueSpec(ShoppingCartFn.S2)
+            .withValueSpec(ShoppingCartFn.S3)
+            .withValueSpec(ShoppingCartFn.S4)
             .withSupplier(ShoppingCartFn::new)
             .build();
 

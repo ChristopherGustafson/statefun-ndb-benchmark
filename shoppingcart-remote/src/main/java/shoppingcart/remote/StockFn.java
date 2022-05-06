@@ -45,6 +45,15 @@ final class StockFn implements StatefulFunction {
   static final TypeName TYPE = TypeName.typeNameOf(Identifiers.NAMESPACE, "stock");
   static final ValueSpec<Integer> STOCK = ValueSpec.named("stock").withIntType();
 
+
+  static final ValueSpec<String> S1 = ValueSpec.named("first_string").withUtf8StringType();
+
+  static final ValueSpec<String> S2 = ValueSpec.named("second_string").withUtf8StringType();
+
+  static final ValueSpec<String> S3 = ValueSpec.named("third_string").withUtf8StringType();
+
+  static final ValueSpec<String> S4 = ValueSpec.named("fourth_string").withUtf8StringType();
+
   @Override
   public CompletableFuture<Void> apply(Context context, Message message) {
     AddressScopedStorage storage = context.storage();
@@ -56,9 +65,9 @@ final class StockFn implements StatefulFunction {
       final int newQuantity = quantity + restock.getQuantity();
       storage.set(STOCK, newQuantity);
 
-      System.out.println("---");
-      System.out.println("Received Restock for itemId " + context.self().id());
-      System.out.println("---");
+//      System.out.println("---");
+//      System.out.println("Received Restock for itemId " + context.self().id());
+//      System.out.println("---");
       return context.done();
     }
     else if (message.is(REQUEST_ITEM_TYPE)) {
@@ -77,9 +86,27 @@ final class StockFn implements StatefulFunction {
       }
       ItemAvailability itemAvailability = builder.build();
 
-      System.out.println("---");
-      System.out.println("Received ItemRequest from userId " + context.caller().get().id() + " and quantity " + requestQuantity);
-      System.out.println("---");
+//      System.out.println("---");
+//      System.out.println("Received ItemRequest from userId " + context.caller().get().id() + " and quantity " + requestQuantity);
+//      System.out.println("---");
+
+      String s1 = storage.get(S1).orElse("no-val");
+      if(s1.equals("no-val")){
+        storage.set(S1, "This is a very long string that will be utilized to see how well the system reacts to very large state spaces, the larger the better. One more sentence will not hurt this time around. :)");
+      }
+      String s2 = storage.get(S2).orElse("no-val");
+      if(s2.equals("no-val")){
+        storage.set(S2, "This is a very long string that will be utilized to see how well the system reacts to very large state spaces, the larger the better. One more sentence will not hurt this time around. :)");
+      }
+      String s3 = storage.get(S3).orElse("no-val");
+      if(s3.equals("no-val")){
+        storage.set(S3, "This is a very long string that will be utilized to see how well the system reacts to very large state spaces, the larger the better. One more sentence will not hurt this time around. :)");
+      }
+      String s4 = storage.get(S4).orElse("no-val");
+      if(s4.equals("no-val")){
+        storage.set(S4, "This is a very long string that will be utilized to see how well the system reacts to very large state spaces, the larger the better. One more sentence will not hurt this time around. :)");
+      }
+
       context.send(
           MessageBuilder.forAddress(context.caller().get())
               .withCustomType(ITEM_AVAILABILITY_TYPE, itemAvailability)

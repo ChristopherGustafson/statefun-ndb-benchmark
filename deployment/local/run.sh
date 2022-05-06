@@ -7,6 +7,7 @@ export RECOVERY_METHOD="${3:-"eager"}"
 export FUNCTION_TYPE="${4:-"embedded"}"
 
 echo "Running local benchmark with $STATE_BACKEND backend, crashing=$CRASH, $RECOVERY_METHOD recovery and $FUNCTION_TYPE functions"
+touch crashed.txt
 
 if [ "$STATE_BACKEND" = "rocksdb" ];
 then
@@ -24,14 +25,12 @@ then
       " >> deployment/flink/build/conf/flink-conf.yaml
   fi
 fi
+rm -v deployment/flink/build/log/*
 
 # Stop any running Flink Cluster components
 ./deployment/flink/build/bin/stop-cluster.sh
 # Stop any running kafka/zookeeper containers
-docker stop kafka
-docker rm kafka
-docker stop zookeeper
-docker rm zookeeper
+./deployment/local/stop-services.sh
 # Clear old Flink cluster logs
 
 export BenchmarkJobName="BenchmarkJob: "
@@ -48,6 +47,20 @@ echo "${BenchmarkJobName}Starting Flink Cluster..."
 # Wait for startup
 echo "${BenchmarkJobName}Waiting for Flink startup..."
 sleep 20
+
+echo "${BenchmarkJobName}Building StateFun Job..."
+if [ "$FUNCTION_TYPE" = "embedded" ];
+then
+  echo "Building embedded StateFun job..."
+  (cd shoppingcart-embedded/;mvn clean package)
+else
+  echo "Building remote StateFun Module..."
+  (cd shoppingcart-remote-module/;mvn clean package)
+
+  echo "Building remote StateFun Functions..."
+  (cd shoppingcart-remote/;mvn clean package)
+fi
+
 
 # Start StateFun-runtime
 echo "${BenchmarkJobName}Starting StateFun runtime with ${FUNCTION_TYPE} functions..."
@@ -81,7 +94,7 @@ nohup python3 -u output_consumer.py > output_consumer.log &
 cd ..
 
 # Let it run for 160 seconds
-sleep 160
+sleep 130
 
 if [ $CRASH -eq 1 ]
 then
@@ -114,6 +127,6 @@ pkill -f output_consumer.py
 
 
 NOW="$(date +'%d-%m-%Y_%H:%M')"
-mkdir -p output-data/local/$NOW
-mv data-utils/output-data/data.json output-data/local/$NOW
-
+mkdir -p output-data/local/$NOW/${STATE_BACKEND}-${RECOVERY_METHOD}-${FUNCTION_TYPE}
+mv data-utils/output-data/data.json output-data/local/$NOW/${STATE_BACKEND}-${RECOVERY_METHOD}-${FUNCTION_TYPE}
+./output-data/trim-last-line.sh output-data/local/$NOW/${STATE_BACKEND}-${RECOVERY_METHOD}-${FUNCTION_TYPE}/data.json

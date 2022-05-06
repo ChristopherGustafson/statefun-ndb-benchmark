@@ -42,6 +42,8 @@ import shoppingcart.remote.ItemAvailability;
 import shoppingcart.remote.Receipt;
 import shoppingcart.remote.RequestItem;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -63,6 +65,14 @@ final class ShoppingCartFn implements StatefulFunction {
   static final TypeName TYPE = TypeName.typeNameOf(Identifiers.NAMESPACE, "shopping-cart");
   static final ValueSpec<Basket> BASKET = ValueSpec.named("basket").withCustomType(Basket.TYPE);
 
+  static final ValueSpec<String> S1 = ValueSpec.named("first_string").withUtf8StringType();
+
+  static final ValueSpec<String> S2 = ValueSpec.named("second_string").withUtf8StringType();
+
+  static final ValueSpec<String> S3 = ValueSpec.named("third_string").withUtf8StringType();
+
+  static final ValueSpec<String> S4 = ValueSpec.named("fourth_string").withUtf8StringType();
+
 
   @Override
   public CompletableFuture<Void> apply(Context context, Message message) {
@@ -73,14 +83,33 @@ final class ShoppingCartFn implements StatefulFunction {
               .setPublishTimestamp(addToCartMsg.getPublishTimestamp())
               .build();
 
-      System.out.println("---");
-      System.out.println("Received AddToCart for itemId " + addToCartMsg.getItemId() + " and quantity " + addToCartMsg.getQuantity());
-      System.out.println("---");
+//      System.out.println("---");
+//      System.out.println("Received AddToCart for itemId " + addToCartMsg.getItemId() + " and quantity " + addToCartMsg.getQuantity());
+//      System.out.println("---");
 
       final Message request =
           MessageBuilder.forAddress(StockFn.TYPE, addToCartMsg.getItemId())
               .withCustomType(REQUEST_ITEM_TYPE, requestMsg)
               .build();
+
+      final AddressScopedStorage storage = context.storage();
+      String s1 = storage.get(S1).orElse("no-val");
+      if(s1.equals("no-val")){
+        storage.set(S1, "This is a very long string that will be utilized to see how well the system reacts to very large state spaces, the larger the better. One more sentence will not hurt this time around. :)");
+      }
+      String s2 = storage.get(S2).orElse("no-val");
+      if(s2.equals("no-val")){
+        storage.set(S2, "This is a very long string that will be utilized to see how well the system reacts to very large state spaces, the larger the better. One more sentence will not hurt this time around. :)");
+      }
+      String s3 = storage.get(S3).orElse("no-val");
+      if(s3.equals("no-val")){
+        storage.set(S3, "This is a very long string that will be utilized to see how well the system reacts to very large state spaces, the larger the better. One more sentence will not hurt this time around. :)");
+      }
+      String s4 = storage.get(S4).orElse("no-val");
+      if(s4.equals("no-val")){
+        storage.set(S4, "This is a very long string that will be utilized to see how well the system reacts to very large state spaces, the larger the better. One more sentence will not hurt this time around. :)");
+      }
+
       context.send(request);
 
       return context.done();
@@ -117,9 +146,9 @@ final class ShoppingCartFn implements StatefulFunction {
                       .withValue(ADD_TO_CART_TYPE, addConfirm)
                       .build();
 
-      System.out.println("---");
-      System.out.println("Received AddConfirm for itemId " + addConfirm.getItemId() + " and quantity " + addConfirm.getQuantity());
-      System.out.println("---");
+//      System.out.println("---");
+//      System.out.println("Received AddConfirm for itemId " + addConfirm.getItemId() + " and quantity " + addConfirm.getQuantity());
+//      System.out.println("---");
       context.send(egressMessage);
       return context.done();
     }
@@ -153,9 +182,9 @@ final class ShoppingCartFn implements StatefulFunction {
                     .build();
             context.send(egressMessage);
 
-            System.out.println("---");
-            System.out.println("Received checkout for basket:\n" + items);
-            System.out.println("---");
+//            System.out.println("---");
+//            System.out.println("Received checkout for basket:\n" + items);
+//            System.out.println("---");
           });
     }
     return context.done();

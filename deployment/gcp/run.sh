@@ -1,42 +1,48 @@
 #!/bin/bash
 
-# USAGE: run.sh <N_FLINK_WORKERS> <ndb OR rocksdb> <N_RONDB_WORKERS> <eager OR lazy> <embedded OR remote>
+# USAGE: run.sh <N_FLINK_WORKERS> <ndb OR rocksdb> <N_RONDB_WORKERS> <eager OR lazy> <embedded OR remote> <N_EVENTS_PER_SEC> <CRASH 0 or 1>
 
 # Config variables
 
 # General Config
-export NAME_PREFIX=statefun-benchmark-
+NAME_PREFIX=statefun-benchmark-
 
 # GCP config
-export GCP_IMAGE=ubuntu-minimal-2004-focal-v20220406
-export GCP_IMAGE_PROJECT=ubuntu-os-cloud
-export GCP_MACHINE_TYPE=n2-standard-4
+GCP_IMAGE=ubuntu-minimal-2004-focal-v20220419a
+GCP_IMAGE_PROJECT=ubuntu-os-cloud
+GCP_MACHINE_TYPE=n2-standard-4
+GCP_SERVICE_ACCOUNT=christopher@hops-20.iam.gserviceaccount.com
+
+FLINK_MACHINE_TYPE=n2-standard-16
 
 # RonDB config
-export HEAD_INSTANCE_TYPE=n2-standard-2
-export DATA_NODE_INSTANCE_TYPE=n2-standard-2
-export API_NODE_INSTANCE_TYPE=n2-standard-2
+HEAD_INSTANCE_TYPE=n2-standard-2
+DATA_NODE_INSTANCE_TYPE=n2-standard-2
+API_NODE_INSTANCE_TYPE=n2-standard-2
+
 # Kafka config
-export KAFKA_NAME=${NAME_PREFIX}kafka
-export KAFKA_DOCKER_IMAGE=wurstmeister/kafka:2.12-2.1.1
+KAFKA_NAME=${NAME_PREFIX}kafka
 
 # Flink config
-export JOBMANAGER_NAME=${NAME_PREFIX}jobmanager
-export TASKMANAGER_NAME=${NAME_PREFIX}taskmanager
-export REMOTE_FUNCTIONS_NAME=${NAME_PREFIX}remote-functions
+JOBMANAGER_NAME=${NAME_PREFIX}jobmanager
+TASKMANAGER_NAME=${NAME_PREFIX}taskmanager
+REMOTE_FUNCTIONS_NAME=${NAME_PREFIX}remote-functions
 
 # Data utils config
-export DATA_UTILS_NAME=${NAME_PREFIX}data-utils
+DATA_UTILS_NAME=${NAME_PREFIX}data-utils
+
+FLINK_TASK_SLOTS=8
 
 # User defined config
-export FLINK_WORKERS="${1:-1}"
-export STATE_BACKEND="${2:-"rocksdb"}"
-export RONDB_WORKERS="${3:-2}"
-export RECOVERY_METHOD="${4:-""}"
-export FUNCTION_TYPE="${5:-"embedded"}"
-export EVENTS_PER_SEC="${6:-"1000"}"
+FLINK_WORKERS="${1:-1}"
+STATE_BACKEND="${2:-"rocksdb"}"
+RONDB_WORKERS="${3:-2}"
+RECOVERY_METHOD="${4:-""}"
+FUNCTION_TYPE="${5:-"embedded"}"
+EVENTS_PER_SEC="${6:-"2000"}"
+CRASH=${7:-0}
 
-echo "Running StateFun Rondb benchmark with $FLINK_WORKERS TaskManagers, $STATE_BACKEND backend ($RONDB_WORKERS RonDB workers if used), ($RECOVERY_METHOD recovery if used)"
+echo "Running StateFun Rondb benchmark with $FLINK_WORKERS TaskManagers, $STATE_BACKEND backend, $FUNCTION_TYPE functions ($RONDB_WORKERS RonDB workers if used), ($RECOVERY_METHOD recovery if used), $EVENTS_PER_SEC events per second, failure=$CRASH"
 
 # *
 # ************** RONDB SETUP **************
@@ -78,22 +84,23 @@ fi
 # *
 echo "Creating VM for Kafka"
 
-gcloud compute instances create $KAFKA_NAME --image=$GCP_IMAGE --image-project=$GCP_IMAGE_PROJECT --machine-type=$GCP_MACHINE_TYPE --tags http-server,https-server
+gcloud compute instances create $KAFKA_NAME --image=$GCP_IMAGE --image-project=$GCP_IMAGE_PROJECT --machine-type=$GCP_MACHINE_TYPE --tags http-server,https-server --service-account=$GCP_SERVICE_ACCOUNT --scopes=storage-full,cloud-platform
 echo "Waiting for Kafka VM startup"
 sleep 40
 
 gcloud compute ssh $KAFKA_NAME -- bash -s < deployment/gcp/kafka/kafka-startup.sh &
-export KAFKA_ADDRESS=`gcloud compute instances describe $KAFKA_NAME --format='get(networkInterfaces[0].networkIP)'`
+KAFKA_ADDRESS=`gcloud compute instances describe $KAFKA_NAME --format='get(networkInterfaces[0].networkIP)'`
 
 # *
 # ************** DATA UTILS SETUP **************
 # *
 
 echo "Creating VM for data utils"
-gcloud compute instances create $DATA_UTILS_NAME --image=$GCP_IMAGE --image-project=$GCP_IMAGE_PROJECT --machine-type=$GCP_MACHINE_TYPE --tags http-server,https-server
+gcloud compute instances create $DATA_UTILS_NAME --image=$GCP_IMAGE --image-project=$GCP_IMAGE_PROJECT --machine-type=$GCP_MACHINE_TYPE --tags http-server,https-server --service-account=$GCP_SERVICE_ACCOUNT --scopes=storage-full,cloud-platform
 echo "Waiting for Data Utils VM startup"
 sleep 40
 
+rm -rf data-utils/output-data/
 echo "[Config]
 bootstrap.servers = $KAFKA_ADDRESS:9092
 events_per_sec = $EVENTS_PER_SEC
@@ -107,7 +114,7 @@ gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/data-
 # *
 
 echo "Creating VM for JobManager"
-gcloud compute instances create $JOBMANAGER_NAME --image=$GCP_IMAGE --image-project=$GCP_IMAGE_PROJECT --machine-type=$GCP_MACHINE_TYPE --tags http-server,https-server
+gcloud compute instances create $JOBMANAGER_NAME --image=$GCP_IMAGE --image-project=$GCP_IMAGE_PROJECT --machine-type=$FLINK_MACHINE_TYPE --tags http-server,https-server --service-account=$GCP_SERVICE_ACCOUNT --scopes=storage-full,cloud-platform
 JOBMANAGER_ADDRESS=`gcloud compute instances describe $JOBMANAGER_NAME --format='get(networkInterfaces[0].networkIP)'`
 echo "Waiting for JobManager VM startup..."
 sleep 40
@@ -129,19 +136,28 @@ state.backend.ndb.connectionstring: $RONDB_HEAD_ADDRESS
   if [ "$RECOVERY_METHOD" = "lazy" ];
   then
     echo "
-      state.backend.ndb.lazyrecovery: true
-      " >> deployment/flink/build/conf/flink-conf.yaml
+state.backend.ndb.lazyrecovery: true
+" >> deployment/flink/build/conf/flink-conf.yaml
   fi
 fi
 
+# For setting checkpoints directories, not setting will set flink to use JobManager Storage
+
+PARALELLISM=$((FLINK_WORKERS * FLINK_TASK_SLOTS))
+
 echo "
 jobmanager.rpc.address: $JOBMANAGER_ADDRESS
-parallelism.default: $FLINK_WORKERS
-state.savepoints.dir: file:///tmp/flinksavepoints
-state.checkpoints.dir: file:///tmp/flinkcheckpoints
+taskmanager.numberOfTaskSlots: $FLINK_TASK_SLOTS
+jobmanager.scheduler: adaptive
+jobmanager.memory.process.size: 32g
+taskmanager.memory.process.size: 32g
+taskmanager.memory.task.off-heap.size: 1g
+taskmanager.memory.framework.off-heap.size: 1g
+parallelism.default: $PARALELLISM
+state.savepoints.dir: gs://statefun-benchmark/savepoints
+state.checkpoints.dir: gs://statefun-benchmark/checkpoints
 " >> deployment/flink/build/conf/flink-conf.yaml
 tar -C deployment/flink -czvf flink.tar.gz build
-
 
 echo "Setting up Flink JobManager"
 gcloud compute scp flink.tar.gz $JOBMANAGER_NAME:~
@@ -152,7 +168,7 @@ for i in $(seq 1 $FLINK_WORKERS)
 do
   WORKER_NAME="$TASKMANAGER_NAME-$i"
   echo "Setting up $WORKER_NAME"
-  gcloud compute instances create $WORKER_NAME --image=$GCP_IMAGE --image-project=$GCP_IMAGE_PROJECT --machine-type=$GCP_MACHINE_TYPE --tags http-server,https-server
+  gcloud compute instances create $WORKER_NAME --image=$GCP_IMAGE --image-project=$GCP_IMAGE_PROJECT --machine-type=$FLINK_MACHINE_TYPE --tags http-server,https-server --service-account=$GCP_SERVICE_ACCOUNT --scopes=storage-full,cloud-platform
 done
 
 # Sleep to let vm start properly
@@ -176,7 +192,7 @@ then
   gcloud compute ssh $JOBMANAGER_NAME -- bash -s < deployment/gcp/flink/run_statefun_embedded.sh &
 else
   echo "Creating VM for remote functions"
-  gcloud compute instances create $REMOTE_FUNCTIONS_NAME --image=$GCP_IMAGE --image-project=$GCP_IMAGE_PROJECT --machine-type=$GCP_MACHINE_TYPE --tags http-server,https-server
+  gcloud compute instances create $REMOTE_FUNCTIONS_NAME --image=$GCP_IMAGE --image-project=$GCP_IMAGE_PROJECT --machine-type=$FLINK_MACHINE_TYPE --tags http-server,https-server
   sleep 40
   REMOTE_FUNCTIONS_ADDRESS=`gcloud compute instances describe $REMOTE_FUNCTIONS_NAME --format='get(networkInterfaces[0].networkIP)'`
 
@@ -227,19 +243,36 @@ sleep 30
 # *
 # ************** BENCHMARK RUN **************
 # *
+
+echo "Starting Output Consumer"
+gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/run-output-consumer.sh &
+
 echo "Starting Data Generator"
+#if [ $CRASH -eq 1 ]
+#then
+#  gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/run-data-generator.sh &
+#  # Delete one TaskManager halfway trough execution to simulate failure
+#  sleep 60
+#  echo "Crashing a TaskManager"
+#  gcloud compute instances delete "$TASKMANAGER_NAME-1" --quiet
+#else
+#fi
 gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/run-data-generator.sh
 echo "Data Generator Finished"
 
-echo "Starting Output Consumer"
-gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/run-output-consumer.sh
+echo "Waiting to make sure all events are consumed"
+sleep 120
 echo "Output Consumer Finished"
 
-# Copy data file to local
+# Copy data file to local, clean up last line in case it is malformed
 NOW="$(date +'%d-%m-%Y_%H:%M')"
-mkdir -p output-data/$NOW/${STATE_BACKEND}${RECOVERY_METHOD}-${FLINK_WORKERS}-workers-${FUNCTION_TYPE}/
-gcloud compute scp $DATA_UTILS_NAME:~/data-utils/output-data/data.json output-data/$NOW/${STATE_BACKEND}-${RECOVERY_METHOD}-${FLINK_WORKERS}-workers-${FUNCTION_TYPE}
-
+CURRENT_PATH=`pwd`
+mkdir -p output-data/$NOW/
+gcloud compute scp $DATA_UTILS_NAME:~/data-utils/output-data/data.json output-data/$NOW/${STATE_BACKEND}-${RECOVERY_METHOD}-${FLINK_WORKERS}-workers-${FUNCTION_TYPE}-${EVENTS_PER_SEC}.json
+gcloud compute scp $JOBMANAGER_NAME:~/build/log/flink-farah-standalonesession-0-statefun-benchmark-jobmanager.log output-data/$NOW/jobmanager.log
+gcloud compute scp $DATA_UTILS_NAME:~/data-utils/event_producer.log output-data/$NOW/event_producer.log
+gcloud compute scp $DATA_UTILS_NAME:~/data-utils/output_consumer.log output-data/$NOW/output_consumer.log
+./output-data/trim-last-line.sh output-data/$NOW/${STATE_BACKEND}-${RECOVERY_METHOD}-${FLINK_WORKERS}-workers-${FUNCTION_TYPE}-${EVENTS_PER_SEC}.json
 
 # Clean up
 echo "Deleting VM instances"
@@ -250,5 +283,11 @@ gcloud compute instances delete $REMOTE_FUNCTIONS_NAME --quiet
 for i in $(seq 1 $FLINK_WORKERS);
 do
  WORKER_NAME="$TASKMANAGER_NAME-$i"
+ gcloud compute scp $WORKER_NAME:~/build/log/flink-farah-taskexecutor-0-statefun-benchmark-taskmanager-${i}.log output-data/$NOW/taskmanager-${i}.log
+ gcloud compute scp $WORKER_NAME:~/build/log/flink-farah-taskexecutor-0-statefun-benchmark-taskmanager-${i}.log.1 output-data/$NOW/taskmanager-${i}.log.1
+ gcloud compute scp $WORKER_NAME:~/build/log/flink-farah-taskexecutor-0-statefun-benchmark-taskmanager-${i}.log.2 output-data/$NOW/taskmanager-${i}.log.2
+ gcloud compute scp $WORKER_NAME:~/build/log/flink-farah-taskexecutor-0-statefun-benchmark-taskmanager-${i}.log.3 output-data/$NOW/taskmanager-${i}.log.3
  gcloud compute instances delete $WORKER_NAME --quiet
 done
+
+mv output-data/$NOW/ /media/farah/ce8e52bc-a47a-4fb7-b504-390efd9006ff/christopher/benchmark-data/

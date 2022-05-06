@@ -8,19 +8,19 @@ import math
 import string
 
 
-time_periods = 100
+time_periods = 200
 requests_per_period = 30000
 dirname = os.path.dirname(__file__)
 random.seed(datetime.now())
 
 # Data generation config
-unique_users = 10000
-unique_items = 100
+unique_users = 50000
+unique_items = 10000
 
-user_id_length = 12
-item_id_length = 8
+user_id_length = 20
+item_id_length = 16
 
-max_quantity = 10
+max_quantity = 9
 max_add_to_carts = 4
 restock_amount = 200
 

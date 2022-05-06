@@ -12,6 +12,9 @@ cd lib-ndb-6.1.0
 export LD_LIBRARY_PATH=`pwd`
 cd ..
 
+# Create file used for knowing whether we have crashed or not
+touch crashed.txt
+
 # Setup and run Flink and StateFun runtime
 tar -xvzf flink.tar.gz
 ./build/bin/taskmanager.sh start

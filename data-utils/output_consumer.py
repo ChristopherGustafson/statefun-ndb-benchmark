@@ -36,5 +36,5 @@ with open(path+'/data.json', 'w') as output_file:
         }
         json.dump(event, output_file)
         output_file.write('\n')
-
-
+        if (events_read % 1000) == 0:
+            print(f"Consumed {events_read} events")

@@ -57,11 +57,9 @@ taskmanager.memory.process.size: 1728m
 
 # The number of task slots that each TaskManager offers. Each slot runs one parallel pipeline.
 
-taskmanager.numberOfTaskSlots: 2
 
 # The parallelism used for programs that did not specify and other parallelism.
 
-parallelism.default: 1
 
 # The default file system scheme and authority.
 # 
@@ -285,6 +283,6 @@ classloader.parent-first-patterns.additional: org.apache.flink.statefun;org.apac
 
 cluster.evenly-spread-out-slots: true
 
-heartbeat.rpc-failure-threshold: 1
-heartbeat.interval: 1000
-heartbeat.timeout: 5000
+parallelism.default: 1
+
+taskmanager.numberOfTaskSlots: 1

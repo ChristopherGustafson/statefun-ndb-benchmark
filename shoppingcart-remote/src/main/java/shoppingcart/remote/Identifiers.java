@@ -43,10 +43,12 @@ final class Identifiers {
   static final String RECEIPT_TOPIC = "receipt";
   static final String ADD_CONFIRM_TOPIC = "add-confirm";
 
+  static final TypeName FAULTY_FN_TYPE = TypeName.typeNameOf(Identifiers.NAMESPACE, "faulty");
+
   public static final Type<AddToCart> ADD_TO_CART_TYPE =
           SimpleType.simpleImmutableTypeFrom(
                   TypeName.typeNameOf(NAMESPACE, AddToCart.class.getName()),
-                  msg -> JsonFormat.printer().print(msg).getBytes(),
+                  msg -> JsonFormat.printer().print(msg).getBytes(StandardCharsets.UTF_8),
                   AddToCart::parseFrom);
 
   public static final Type<Checkout> CHECKOUT_TYPE =

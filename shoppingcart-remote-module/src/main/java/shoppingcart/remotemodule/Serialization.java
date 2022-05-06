@@ -15,8 +15,13 @@ import shoppingcart.remote.Checkout;
 import shoppingcart.remote.Receipt;
 import shoppingcart.remote.RestockItem;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class Serialization {
 
@@ -30,6 +35,18 @@ public class Serialization {
                 JsonFormat.parser().merge(inputString, msgBuilder);
                 AddToCart.Builder addBuilder = (AddToCart.Builder) msgBuilder;
                 AddToCart msg = addBuilder.setPublishTimestamp(Long.toString(input.timestamp())).build();
+                // Cause failure if quantity < 0
+                if(msg.getQuantity() < 0){
+                    // Start by deleting file indicating that we have caused crash
+                    File crashFile = new File("crashed.txt");
+                    if (crashFile.delete()) {
+                        System.out.println("Crash file deleted: " + crashFile.getName());
+                        throw new RuntimeException("KABOOM!");
+                    } else {
+                        System.out.println("Crash file already deleted, moving on");
+                    }
+                }
+
                 return pack(msg);
             } catch(IOException e){
                 e.printStackTrace();
