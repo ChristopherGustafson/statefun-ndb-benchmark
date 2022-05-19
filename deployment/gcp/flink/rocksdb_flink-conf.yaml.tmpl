@@ -34,7 +34,7 @@
 
 # The RPC port where the JobManager is reachable.
 
-jobmanager.rpc.port: 6123
+#jobmanager.rpc.port: 6123
 
 
 # The total process memory size for the JobManager.
@@ -42,7 +42,6 @@ jobmanager.rpc.port: 6123
 # Note this accounts for all memory usage within the JobManager process, including JVM metaspace and other overhead.
 
 #jobmanager.memory.process.size: 1600m
-
 
 # The total process memory size for the TaskManager.
 #
@@ -53,7 +52,7 @@ jobmanager.rpc.port: 6123
 # To exclude JVM metaspace and overhead, please, use total Flink memory size instead of 'taskmanager.memory.process.size'.
 # It is not recommended to set both 'taskmanager.memory.process.size' and Flink memory.
 #
-# taskmanager.memory.flink.size: 1280m
+#taskmanager.memory.flink.size: 1280m
 
 # The number of task slots that each TaskManager offers. Each slot runs one parallel pipeline.
 
@@ -275,9 +274,9 @@ jobmanager.execution.failover-strategy: region
 # NDB/Statefun config
 
 state.backend: rocksdb
-state.backend.incremental: true
-execution.checkpointing.interval: 10sec
+execution.checkpointing.interval: 30sec
 execution.checkpointing.mode: EXACTLY_ONCE
+state.backend.incremental: true
 #state.savepoints.dir: file:///tmp/flinksavepoints
 #state.checkpoints.dir: file:///tmp/flinkcheckpoints
 classloader.parent-first-patterns.additional: org.apache.flink.statefun;org.apache.kafka;com.google.protobuf

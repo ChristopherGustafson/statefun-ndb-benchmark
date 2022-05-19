@@ -145,6 +145,7 @@ fi
 
 PARALELLISM=$((FLINK_WORKERS * FLINK_TASK_SLOTS))
 
+# CHANGE BACK MEMORY IF NEEDED
 echo "
 jobmanager.rpc.address: $JOBMANAGER_ADDRESS
 taskmanager.numberOfTaskSlots: $FLINK_TASK_SLOTS
@@ -212,8 +213,8 @@ spec:
   deliverySemantic:
     type: exactly-once
     transactionTimeout: 15min
-  properties:
-    - transaction.timeout.ms: 7200000
+#  properties:
+#    - transaction.timeout.ms: 7200000
 ---
 kind: io.statefun.kafka.v1/egress
 spec:
@@ -222,8 +223,8 @@ spec:
   deliverySemantic:
     type: exactly-once
     transactionTimeout: 15min
-  properties:
-    - transaction.timeout.ms: 7200000
+#  properties:
+#    - transaction.timeout.ms: 7200000
 " > shoppingcart-remote-module/src/main/resources/module.yaml
   (cd shoppingcart-remote/;mvn clean package)
   (cd shoppingcart-remote-module/;mvn clean package)
@@ -231,14 +232,15 @@ spec:
   echo "Running remote functions"
   gcloud compute scp shoppingcart-remote/target/shoppingcart-remote-1.0-SNAPSHOT-jar-with-dependencies.jar $REMOTE_FUNCTIONS_NAME:~
   gcloud compute ssh $REMOTE_FUNCTIONS_NAME -- bash -s < deployment/gcp/flink/remote_functions_setup.sh &
+  sleep 30
 
   echo "Running StateFun runtime"
   gcloud compute scp shoppingcart-remote-module/target/shoppingcart-remote-module-1.0-SNAPSHOT-jar-with-dependencies.jar $JOBMANAGER_NAME:~
   gcloud compute ssh $JOBMANAGER_NAME -- bash -s < deployment/gcp/flink/run_statefun_remote.sh &
 fi
-
 echo "Waiting for StateFun runtime startup"
 sleep 30
+
 
 # *
 # ************** BENCHMARK RUN **************
@@ -248,17 +250,9 @@ echo "Starting Output Consumer"
 gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/run-output-consumer.sh &
 
 echo "Starting Data Generator"
-#if [ $CRASH -eq 1 ]
-#then
-#  gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/run-data-generator.sh &
-#  # Delete one TaskManager halfway trough execution to simulate failure
-#  sleep 60
-#  echo "Crashing a TaskManager"
-#  gcloud compute instances delete "$TASKMANAGER_NAME-1" --quiet
-#else
-#fi
 gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/run-data-generator.sh
 echo "Data Generator Finished"
+
 
 echo "Waiting to make sure all events are consumed"
 sleep 120
@@ -283,6 +277,7 @@ gcloud compute instances delete $REMOTE_FUNCTIONS_NAME --quiet
 for i in $(seq 1 $FLINK_WORKERS);
 do
  WORKER_NAME="$TASKMANAGER_NAME-$i"
+ gcloud compute scp $WORKER_NAME:~/build/log/flink-farah-taskexecutor-0-statefun-benchmark-taskmanager-${i}.out output-data/$NOW/taskmanager-${i}.out
  gcloud compute scp $WORKER_NAME:~/build/log/flink-farah-taskexecutor-0-statefun-benchmark-taskmanager-${i}.log output-data/$NOW/taskmanager-${i}.log
  gcloud compute scp $WORKER_NAME:~/build/log/flink-farah-taskexecutor-0-statefun-benchmark-taskmanager-${i}.log.1 output-data/$NOW/taskmanager-${i}.log.1
  gcloud compute scp $WORKER_NAME:~/build/log/flink-farah-taskexecutor-0-statefun-benchmark-taskmanager-${i}.log.2 output-data/$NOW/taskmanager-${i}.log.2

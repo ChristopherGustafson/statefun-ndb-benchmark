@@ -39,12 +39,14 @@ public class ShoppingCartFn implements StatefulFunction {
 
     @Persisted
     private final PersistedValue<String> S1 = PersistedValue.of("cart_first_string", String.class);
+
     @Persisted
     private final PersistedValue<String> S2 = PersistedValue.of("cart_second_string", String.class);
+
     @Persisted
     private final PersistedValue<String> S3 = PersistedValue.of("cart_third_string", String.class);
-    @Persisted
-    private final PersistedValue<String> S4 = PersistedValue.of("cart_fourth_string", String.class);
+
+
 
     @Override
     public void invoke(Context context, Object input) {
@@ -66,21 +68,21 @@ public class ShoppingCartFn implements StatefulFunction {
                 }
             }
 
-            String s1 = S1.get();
-            if(s1 == null){
-                S1.set("This is a very long string that will be utilized to see how well the system reacts to very large state spaces, the larger the better. One more sentence will not hurt this time around. :)");
-            }
-            String s2 = S2.get();
-            if(s2 == null){
-                S2.set("This is a very long string that will be utilized to see how well the system reacts to very large state spaces, the larger the better. One more sentence will not hurt this time around. :)");
-            }
-            String s3 = S3.get();
-            if(s3 == null){
-                S3.set("This is a very long string that will be utilized to see how well the system reacts to very large state spaces, the larger the better. One more sentence will not hurt this time around. :)");
-            }
-            String s4 = S4.get();
-            if(s4 == null){
-                S4.set("This is a very long string that will be utilized to see how well the system reacts to very large state spaces, the larger the better. One more sentence will not hurt this time around. :)");
+            try {
+                String s1 = S1.get();
+                if (s1 == null) {
+                    S1.set(new String(new char[4000]));
+                }
+                String s2 = S2.get();
+                if (s2 == null) {
+                    S2.set(new String(new char[4000]));
+                }
+                String s3 = S3.get();
+                if (s3 == null) {
+                    S3.set(new String(new char[4000]));
+                }
+            } catch (Exception e) {
+                System.out.println("ClassCastException");
             }
 
             RequestItem requestMsg = RequestItem.newBuilder()
@@ -103,9 +105,13 @@ public class ShoppingCartFn implements StatefulFunction {
 //                Integer quantity = BASKET.get(itemId);
 //                quantity = quantity == null ? requestedQuantity : quantity + requestedQuantity;
 //                BASKET.set(itemId, quantity);
-                Integer quantity = BASKET.get();
-                quantity = quantity == null ? requestedQuantity : quantity + requestedQuantity;
-                BASKET.set(quantity);
+                try {
+                    Integer quantity = BASKET.get();
+                    quantity = quantity == null ? requestedQuantity : quantity + requestedQuantity;
+                    BASKET.set(quantity);
+                } catch (Exception e) {
+                    System.out.println("ClassCastException");
+                }
             }
 
             AddToCart addConfirm = AddToCart.newBuilder()
@@ -129,7 +135,12 @@ public class ShoppingCartFn implements StatefulFunction {
 //                for(Map.Entry<String, Integer> entry : BASKET.entries()){
 //                    receipt += "Item: " + entry.getKey() + ", Quantity: " + entry.getValue() + "\n";
 //                }
-            Integer receiptQuantity = BASKET.get();
+            Integer receiptQuantity = null;
+            try {
+                receiptQuantity = BASKET.get();
+            } catch(Exception e) {
+                System.out.println("ClassCastException");
+            }
             if(receiptQuantity != null){
                 String receipt = "User " + context.self().id() + " receipt: " + receiptQuantity + " items";
                 BASKET.clear();

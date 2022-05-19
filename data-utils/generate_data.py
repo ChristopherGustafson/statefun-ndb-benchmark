@@ -14,7 +14,7 @@ dirname = os.path.dirname(__file__)
 random.seed(datetime.now())
 
 # Data generation config
-unique_users = 50000
+unique_users = 500000
 unique_items = 10000
 
 user_id_length = 20
@@ -34,7 +34,8 @@ minimum_id = 10000
 # users = range(minimum_id + unique_items, minimum_id + unique_items + unique_users)
 items = [''.join(random.choice(string.ascii_lowercase) for _ in range(item_id_length)) for _ in range(unique_items)]
 users = [''.join(random.choice(string.ascii_lowercase) for _ in range(user_id_length)) for _ in range(unique_users)]
-
+used_users = {}
+count = 0
 
 # Distribution parameters
 power_law_a = 3
@@ -43,8 +44,13 @@ item_counts = {}
 
 
 def get_random_user():
+    # random_user = np.random.randint(0, unique_users)
     power_l_r = np.random.power(power_law_a)
     random_user = int(power_l_r * unique_users)
+    if random_user not in used_users:
+        used_users[random_user] = True
+        global count
+        count = count + 1
     return str(users[random_user])
 
 
@@ -102,6 +108,8 @@ for i in range(1, time_periods+1):
     # Create text file
     file_path = os.path.join(path, "data.txt")
     file = open(file_path, "w+")
+    if i == 120:
+        print("At period 120 we have used " + str(count))
 
     for _ in range(requests_per_period):
         action = random.randint(0, 20)

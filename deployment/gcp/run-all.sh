@@ -16,51 +16,50 @@
 #./deployment/gcp/run.sh 3 rocksdb 3 eager remote 1000 0
 #sleep 20
 
+
 # RONDB
-./deployment/gcp/rondb/run-rondb.sh
+#./deployment/gcp/rondb/run-rondb.sh
 
 # NDB PERFORMANCE PLOTS
 #./deployment/gcp/run.sh 3 ndb 3 eager embedded 2000 0
 #gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
 #
-#./deployment/gcp/run.sh 3 ndb 3 eager remote 2000 0
+#./deployment/gcp/run.sh 3 ndb 3 eager remote 1000 0
 #gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
-
+#sleep 20
 # NDB AVAILABILITY PLOTS
 
-./deployment/gcp/run.sh 3 ndb 3 eager embedded 8000 0
-gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
-sleep 20
-
-./deployment/gcp/run.sh 3 ndb 3 eager remote 1000 0
-gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
-sleep 20
-
-## NDB PERFORMANCE PLOTS
-##./deployment/gcp/run.sh 3 ndb 3 lazy embedded 2000 0
-##gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
-##
-##./deployment/gcp/run.sh 3 ndb 3 lazy remote 2000 0
-##gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
-
-# NDB AVAILABILITY PLOTS
+### NDB PERFORMANCE PLOTS
+###./deployment/gcp/run.sh 3 ndb 3 lazy embedded 2000 0
+###gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
+###
+#./deployment/gcp/run.sh 3 ndb 3 lazy remote 1000 0
+#sleep 20
+#gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
+#
+## NDB AVAILABILITY PLOTS
 ./deployment/gcp/run.sh 3 ndb 3 lazy embedded 8000 0
 gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
 sleep 20
 
-./deployment/gcp/run.sh 3 ndb 3 lazy remote 1000 0
-gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
-sleep 20
+./deployment/gcp/run.sh 3 ndb 3 eager embedded 8000 0
+#gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
+
+#./deployment/gcp/run.sh 3 ndb 3 lazy remote 1000 0
+#gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
+#sleep 20
 
 gcloud compute instances delete statefun-benchmark-cpu00 --quiet
 gcloud compute instances delete statefun-benchmark-cpu01 --quiet
 gcloud compute instances delete statefun-benchmark-head --quiet
 gcloud compute instances delete statefun-benchmark-api00 --quiet
-
+##
+#
 
 ./deployment/gcp/run.sh 3 rocksdb 3 eager embedded 8000 0
 sleep 20
 
-./deployment/gcp/run.sh 3 rocksdb 3 eager remote 1000 0
-sleep 20
+#./deployment/gcp/run.sh 3 rocksdb 3 eager remote 1000 0
+#sleep 20
 
+#

@@ -1,3 +1,8 @@
+
+create user 'hop'@'%' identified by 'hop';
+grant all privileges on *.* to 'hop'@'%';
+flush privileges;
+
 CREATE DATABASE flinkndb;
 USE flinkndb;
 
