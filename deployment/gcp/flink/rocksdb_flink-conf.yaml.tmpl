@@ -274,7 +274,7 @@ jobmanager.execution.failover-strategy: region
 # NDB/Statefun config
 
 state.backend: rocksdb
-execution.checkpointing.interval: 30sec
+#execution.checkpointing.interval: 20sec
 execution.checkpointing.mode: EXACTLY_ONCE
 state.backend.incremental: true
 #state.savepoints.dir: file:///tmp/flinksavepoints
@@ -284,3 +284,5 @@ classloader.parent-first-patterns.additional: org.apache.flink.statefun;org.apac
 #heartbeat.rpc-failure-threshold: 1
 #heartbeat.timeout: 5000
 #heartbeat.interval: 1000
+
+statefun.feedback.memory.size: 1g

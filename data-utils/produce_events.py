@@ -8,11 +8,12 @@ config = configparser.RawConfigParser()
 config.read('config.properties')
 bootstrap_servers = config.get("Config", "bootstrap.servers")
 events_per_sec = int(config.get("Config", "events_per_sec"))
+fail_time_period = 160
 add_to_cart_topic = "add-to-cart"
 checkout_topic = "checkout"
 restock_topic = "restock"
 # How many time periods of data that exist
-time_periods = 200
+time_periods = 300
 # Size of every event micro batch, the program will wait a certain time between every micro batch of events
 # to produce the correct number of events per second 
 micro_batch_size = 100
@@ -23,7 +24,8 @@ dirname = os.path.dirname(__file__)
 producer = KafkaProducer(bootstrap_servers=bootstrap_servers)
 crashed = False
 # fail_time_period = round(sec_before_crash * events_per_sec / 30000)
-fail_time_period = 120
+
+print("Running event producer, {} events per second, failing at time period {}".format(events_per_sec, fail_time_period))
 
 while True:
     for i in range(1, time_periods+1):

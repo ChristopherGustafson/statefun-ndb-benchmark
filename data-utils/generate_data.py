@@ -8,26 +8,24 @@ import math
 import string
 
 
-time_periods = 200
+time_periods = 300
 requests_per_period = 30000
 dirname = os.path.dirname(__file__)
 random.seed(datetime.now())
 
 # Data generation config
-unique_users = 500000
+unique_users = 2000000
 unique_items = 10000
 
 user_id_length = 20
 item_id_length = 16
 
 max_quantity = 9
-max_add_to_carts = 4
+max_add_to_carts = 10
 restock_amount = 200
-
 
 # Generating random id as string
 # item_id = ''.join(random.choice(string.ascii_lowercase) for _ in range(item_id_length))
-
 
 minimum_id = 10000
 # items = range(minimum_id, minimum_id + unique_items)
@@ -44,9 +42,9 @@ item_counts = {}
 
 
 def get_random_user():
-    # random_user = np.random.randint(0, unique_users)
-    power_l_r = np.random.power(power_law_a)
-    random_user = int(power_l_r * unique_users)
+    random_user = np.random.randint(0, unique_users)
+    #power_l_r = np.random.power(power_law_a)
+    #random_user = int(power_l_r * unique_users)
     if random_user not in used_users:
         used_users[random_user] = True
         global count
@@ -108,8 +106,8 @@ for i in range(1, time_periods+1):
     # Create text file
     file_path = os.path.join(path, "data.txt")
     file = open(file_path, "w+")
-    if i == 120:
-        print("At period 120 we have used " + str(count))
+    if i == 240:
+        print("At period 240 we have used " + str(count))
 
     for _ in range(requests_per_period):
         action = random.randint(0, 20)

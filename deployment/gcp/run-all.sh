@@ -38,11 +38,11 @@
 #gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
 #
 ## NDB AVAILABILITY PLOTS
-./deployment/gcp/run.sh 3 ndb 3 lazy embedded 8000 0
+./deployment/gcp/run.sh 3 ndb 3 lazy embedded 12000 0
 gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
 sleep 20
 
-./deployment/gcp/run.sh 3 ndb 3 eager embedded 8000 0
+./deployment/gcp/run.sh 3 ndb 3 eager embedded 12000 0
 #gcloud compute ssh statefun-benchmark-api00 -- bash -s < deployment/gcp/rondb/clear-tables.sh
 
 #./deployment/gcp/run.sh 3 ndb 3 lazy remote 1000 0
@@ -56,7 +56,7 @@ gcloud compute instances delete statefun-benchmark-api00 --quiet
 ##
 #
 
-./deployment/gcp/run.sh 3 rocksdb 3 eager embedded 8000 0
+./deployment/gcp/run.sh 3 rocksdb 3 eager embedded 12000 0
 sleep 20
 
 #./deployment/gcp/run.sh 3 rocksdb 3 eager remote 1000 0
