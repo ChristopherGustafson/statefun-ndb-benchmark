@@ -31,22 +31,14 @@ public class ShoppingCartFn implements StatefulFunction {
 //    @Persisted
 //    private final PersistedValue<Basket> BASKET = PersistedValue.of("basket", Basket.class);
 
+    @Persisted
+    private final PersistedTable<String, Integer> BASKET = PersistedTable.of("basket", String.class, Integer.class);
+
 //    @Persisted
-//    private final PersistedTable<String, Integer> BASKET = PersistedTable.of("basket", String.class, Integer.class);
+//    private final PersistedValue<Integer> BASKET = PersistedValue.of("basket", Integer.class);
 
-    @Persisted
-    private final PersistedValue<Integer> BASKET = PersistedValue.of("basket", Integer.class);
-
-    @Persisted
-    private final PersistedValue<String> S1 = PersistedValue.of("cart_first_string", String.class);
-
-    @Persisted
-    private final PersistedValue<String> S2 = PersistedValue.of("cart_second_string", String.class);
-
-    @Persisted
-    private final PersistedValue<String> S3 = PersistedValue.of("cart_third_string", String.class);
-
-
+//    @Persisted
+//    private final PersistedValue<String> S1 = PersistedValue.of("first", String.class);
 
     @Override
     public void invoke(Context context, Object input) {
@@ -57,7 +49,7 @@ public class ShoppingCartFn implements StatefulFunction {
             AddToCart addToCartMsg = (AddToCart) input;
 
             // Cause failure if quantity < 0
-            if(addToCartMsg.getQuantity() < 0){
+            if (addToCartMsg.getQuantity() < 0) {
                 // Start by deleting file indicating that we have caused crash
                 File crashFile = new File("crashed.txt");
                 if (crashFile.delete()) {
@@ -68,47 +60,30 @@ public class ShoppingCartFn implements StatefulFunction {
                 }
             }
 
-            try {
-                String s1 = S1.get();
-                if (s1 == null) {
-                    S1.set(new String(new char[4000]));
-                }
-                String s2 = S2.get();
-                if (s2 == null) {
-                    S2.set(new String(new char[4000]));
-                }
-                String s3 = S3.get();
-                if (s3 == null) {
-                    S3.set(new String(new char[4000]));
-                }
-            } catch (Exception e) {
-                System.out.println("ClassCastException");
-            }
-
             RequestItem requestMsg = RequestItem.newBuilder()
-                .setQuantity(addToCartMsg.getQuantity() < 0 ? addToCartMsg.getQuantity() : 1)
-                .setPublishTimestamp(addToCartMsg.getPublishTimestamp())
-                .build();
+                    .setQuantity(addToCartMsg.getQuantity() < 0 ? addToCartMsg.getQuantity() : 1)
+                    .setPublishTimestamp(addToCartMsg.getPublishTimestamp())
+                    .build();
 
 //            LOG.info("---");
 //            LOG.info("Received AddToCart for itemId " + addToCartMsg.getItemId() + " and quantity " + addToCartMsg.getQuantity());
 //            LOG.info("---");
 
             context.send(Identifiers.STOCK_FUNCTION_TYPE, addToCartMsg.getItemId(), requestMsg);
-        }
-        else if(input instanceof ItemAvailability){
+        } else if (input instanceof ItemAvailability) {
             ItemAvailability availability = (ItemAvailability) input;
             String itemId = context.caller().id();
             int requestedQuantity = availability.getQuantity();
 
-            if(availability.getStatus().equals(ItemAvailability.Status.INSTOCK)){
-//                Integer quantity = BASKET.get(itemId);
-//                quantity = quantity == null ? requestedQuantity : quantity + requestedQuantity;
-//                BASKET.set(itemId, quantity);
+            if (availability.getStatus().equals(ItemAvailability.Status.INSTOCK)) {
                 try {
-                    Integer quantity = BASKET.get();
+                    Integer quantity = BASKET.get(itemId);
                     quantity = quantity == null ? requestedQuantity : quantity + requestedQuantity;
-                    BASKET.set(quantity);
+                    BASKET.set(itemId, quantity);
+
+//                    Integer quantity = BASKET.get();
+//                    quantity = quantity == null ? requestedQuantity : quantity + requestedQuantity;
+//                    BASKET.set(quantity);
                 } catch (Exception e) {
                     System.out.println("ClassCastException");
                 }
@@ -126,23 +101,22 @@ public class ShoppingCartFn implements StatefulFunction {
 //            LOG.info("---");
 
             context.send(Identifiers.ADD_CONFIRM_EGRESS, addConfirm);
-        }
-        else if(input instanceof Checkout){
+        } else if (input instanceof Checkout) {
             Checkout checkout = (Checkout) input;
 
-//            if(BASKET.entries().iterator().hasNext()){
-//                String receipt = "User " + context.self().id() + " receipt: \n";
-//                for(Map.Entry<String, Integer> entry : BASKET.entries()){
-//                    receipt += "Item: " + entry.getKey() + ", Quantity: " + entry.getValue() + "\n";
-//                }
-            Integer receiptQuantity = null;
+            String receipt = null;
             try {
-                receiptQuantity = BASKET.get();
-            } catch(Exception e) {
+                if(BASKET.entries().iterator().hasNext()) {
+                    receipt = "User " + context.self().id() + " receipt: \n";
+                    for (Map.Entry<String, Integer> entry : BASKET.entries()) {
+                        receipt += "Item: " + entry.getKey() + ", Quantity: " + entry.getValue() + "\n";
+                    }
+                }
+            } catch (Exception e) {
                 System.out.println("ClassCastException");
             }
-            if(receiptQuantity != null){
-                String receipt = "User " + context.self().id() + " receipt: " + receiptQuantity + " items";
+            if (receipt != null) {
+//                String receipt = "User " + context.self().id() + " receipt: " + receiptQuantity + " items";
                 BASKET.clear();
 //                LOG.info("---");
 //                LOG.info("Received checkout for basket:\n{}", receipt);
@@ -156,12 +130,4 @@ public class ShoppingCartFn implements StatefulFunction {
             }
         }
     }
-
-//    public static <M extends Message> TypedValue pack(M message) {
-//        return TypedValue.newBuilder()
-//                .setTypename(MyConstants.NAMESPACE + "/" + InternalMsg.class.getName())
-//                .setHasValue(true)
-//                .setValue(message.toByteString())
-//                .build();
-//      }
 }
