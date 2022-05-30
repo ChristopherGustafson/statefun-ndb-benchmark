@@ -8,12 +8,12 @@ config = configparser.RawConfigParser()
 config.read('config.properties')
 bootstrap_servers = config.get("Config", "bootstrap.servers")
 events_per_sec = int(config.get("Config", "events_per_sec"))
-fail_time_period = 160
+fail_time_period = int(config.get("Config", "fail_time_period"))
 add_to_cart_topic = "add-to-cart"
 checkout_topic = "checkout"
 restock_topic = "restock"
 # How many time periods of data that exist
-time_periods = 300
+time_periods = 250
 # Size of every event micro batch, the program will wait a certain time between every micro batch of events
 # to produce the correct number of events per second 
 micro_batch_size = 100
@@ -47,11 +47,12 @@ while True:
                         event[1] = event[1][:quantity_i] + "-1" + event[1][quantity_i+1:]
                         crashed = True
 
-                    producer.send(add_to_cart_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
+                    #, key=bytes(event[0], "utf-8")
+                    producer.send(add_to_cart_topic, value=bytes(event[1], "utf-8"))
                 elif "userId" in event[1]:
-                    producer.send(checkout_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
+                    producer.send(checkout_topic, value=bytes(event[1], "utf-8"))
                 else:
-                    producer.send(restock_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
+                    producer.send(restock_topic, value=bytes(event[1], "utf-8"))
                 if (events_produced % events_per_sec) == 0:
                     print(f"Produced {events_produced} events")
             batch_duration = (time.time_ns() - batch_start)/1000000000

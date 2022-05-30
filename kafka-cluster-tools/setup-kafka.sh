@@ -15,3 +15,26 @@ docker run -d \
   	-e KAFKA_ADVERTISED_PORT="9092" \
 	-e KAFKA_ZOOKEEPER_CONNECT=${IP_ADDR}:2181 \
 	wurstmeister/kafka:2.12-2.1.1
+
+sleep 10
+
+docker run --rm -it \
+	wurstmeister/kafka:2.12-2.1.1 ./opt/kafka_2.12-2.1.1/bin/kafka-topics.sh \
+	--create --topic "add-to-cart" --partitions 4 --zookeeper ${IP_ADDR}:2181 \
+  --replication-factor 1
+docker run --rm -it \
+	wurstmeister/kafka:2.12-2.1.1 ./opt/kafka_2.12-2.1.1/bin/kafka-topics.sh \
+	--create --topic "checkout" --partitions 4 --zookeeper ${IP_ADDR}:2181 \
+  --replication-factor 1
+docker run --rm -it \
+	wurstmeister/kafka:2.12-2.1.1 ./opt/kafka_2.12-2.1.1/bin/kafka-topics.sh \
+	--create --topic "restock"  --partitions 4 --zookeeper ${IP_ADDR}:2181 \
+  --replication-factor 1
+docker run --rm -it \
+	wurstmeister/kafka:2.12-2.1.1 ./opt/kafka_2.12-2.1.1/bin/kafka-topics.sh \
+	--create --topic "add-confirm"  --partitions 4 --zookeeper ${IP_ADDR}:2181 \
+  --replication-factor 1
+docker run --rm -it \
+	wurstmeister/kafka:2.12-2.1.1 ./opt/kafka_2.12-2.1.1/bin/kafka-topics.sh \
+	--create --topic "receipts"  --partitions 4 --zookeeper ${IP_ADDR}:2181 \
+	--replication-factor 1

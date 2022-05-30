@@ -11,3 +11,6 @@ docker rm zookeeper
 
 pkill -f produce_events.py
 pkill -f output_consumer.py
+
+remote_pid=`ps -ef | grep shoppingcart.remote.Expose | awk '{ print $2 }' | head -n 1`
+kill -9 $remote_pid

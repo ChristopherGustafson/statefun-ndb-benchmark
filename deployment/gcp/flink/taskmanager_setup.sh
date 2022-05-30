@@ -16,7 +16,9 @@ cd ..
 touch crashed.txt
 
 # Setup and run Flink and StateFun runtime
+gsutil cp gs://statefun-benchmark/builds/flink.tar.gz .
 tar -xvzf flink.tar.gz
+mv flink-conf.yaml build/conf/flink-conf.yaml
 ./build/bin/taskmanager.sh start
 
 

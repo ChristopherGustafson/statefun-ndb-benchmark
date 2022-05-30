@@ -29,13 +29,10 @@ public class ShoppingCartFn implements StatefulFunction {
     private static final Logger LOG = LoggerFactory.getLogger(ShoppingCartFn.class);
 
 //    @Persisted
-//    private final PersistedValue<Basket> BASKET = PersistedValue.of("basket", Basket.class);
+//    private final PersistedTable<String, Integer> BASKET = PersistedTable.of("basket", String.class, Integer.class);
 
     @Persisted
-    private final PersistedTable<String, Integer> BASKET = PersistedTable.of("basket", String.class, Integer.class);
-
-//    @Persisted
-//    private final PersistedValue<Integer> BASKET = PersistedValue.of("basket", Integer.class);
+    private final PersistedValue<Integer> BASKET = PersistedValue.of("basket", Integer.class);
 
 //    @Persisted
 //    private final PersistedValue<String> S1 = PersistedValue.of("first", String.class);
@@ -77,13 +74,13 @@ public class ShoppingCartFn implements StatefulFunction {
 
             if (availability.getStatus().equals(ItemAvailability.Status.INSTOCK)) {
                 try {
-                    Integer quantity = BASKET.get(itemId);
-                    quantity = quantity == null ? requestedQuantity : quantity + requestedQuantity;
-                    BASKET.set(itemId, quantity);
-
-//                    Integer quantity = BASKET.get();
+//                    Integer quantity = BASKET.get(itemId);
 //                    quantity = quantity == null ? requestedQuantity : quantity + requestedQuantity;
-//                    BASKET.set(quantity);
+//                    BASKET.set(itemId, quantity);
+
+                    Integer quantity = BASKET.get();
+                    quantity = quantity == null ? requestedQuantity : quantity + requestedQuantity;
+                    BASKET.set(quantity);
                 } catch (Exception e) {
                     System.out.println("ClassCastException");
                 }
@@ -105,18 +102,20 @@ public class ShoppingCartFn implements StatefulFunction {
             Checkout checkout = (Checkout) input;
 
             String receipt = null;
+            Integer basket = null;
             try {
-                if(BASKET.entries().iterator().hasNext()) {
-                    receipt = "User " + context.self().id() + " receipt: \n";
-                    for (Map.Entry<String, Integer> entry : BASKET.entries()) {
-                        receipt += "Item: " + entry.getKey() + ", Quantity: " + entry.getValue() + "\n";
-                    }
-                }
+//                if(BASKET.entries().iterator().hasNext()) {
+//                    receipt = "User " + context.self().id() + " receipt: \n";
+//                    for (Map.Entry<String, Integer> entry : BASKET.entries()) {
+//                        receipt += "Item: " + entry.getKey() + ", Quantity: " + entry.getValue() + "\n";
+//                    }
+//                }
+                basket = BASKET.get();
             } catch (Exception e) {
                 System.out.println("ClassCastException");
             }
-            if (receipt != null) {
-//                String receipt = "User " + context.self().id() + " receipt: " + receiptQuantity + " items";
+            if (basket != null) {
+                receipt = "User " + context.self().id() + " receipt: " + basket + " items";
                 BASKET.clear();
 //                LOG.info("---");
 //                LOG.info("Received checkout for basket:\n{}", receipt);

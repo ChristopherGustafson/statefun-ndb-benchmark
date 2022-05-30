@@ -48,7 +48,7 @@ jobmanager.memory.process.size: 1600m
 #
 # Note this accounts for all memory usage within the TaskManager process, including JVM metaspace and other overhead.
 
-taskmanager.memory.process.size: 1728m
+taskmanager.memory.process.size: 2628m
 
 # To exclude JVM metaspace and overhead, please, use total Flink memory size instead of 'taskmanager.memory.process.size'.
 # It is not recommended to set both 'taskmanager.memory.process.size' and Flink memory.
@@ -279,7 +279,11 @@ classloader.parent-first-patterns.additional: org.apache.flink.statefun;org.apac
 
 cluster.evenly-spread-out-slots: true
 
-taskmanager.numberOfTaskSlots: 1
-parallelism.default: 1
+taskmanager.numberOfTaskSlots: 4
+parallelism.default: 8
+statefun.async.max-per-task: 8096
 
 # The parallelism used for programs that did not specify and other parallelism.
+
+taskmanager.memory.managed.size: 1024m
+rest.flamegraph.enabled: true

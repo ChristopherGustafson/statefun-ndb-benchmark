@@ -92,24 +92,6 @@ public class EmbeddedModule implements StatefulFunctionModule {
             }
         });
 
-        /* EGRESS SETUP */
-//        EgressSpec<AddToCart> addConfirmEgress =
-//                KafkaEgressBuilder.forIdentifier(Identifiers.ADD_CONFIRM_EGRESS)
-//                        .withKafkaAddress(kafkaAddress)
-//                        .withSerializer(Serialization.AddToCartKafkaSerializer.class)
-//                        .build();
-//        binder.bindEgress(addConfirmEgress);
-//
-//        EgressSpec<Receipt> receiptEgress =
-//                KafkaEgressBuilder.forIdentifier(Identifiers.RECEIPT_EGRESS)
-//                        .withKafkaAddress(kafkaAddress)
-//                        .withSerializer(Serialization.ReceiptKafkaSerializer.class)
-//                        .build();
-//        binder.bindEgress(receiptEgress);
-
-        /* FUNCTION SETUP */
-//        binder.bindFunctionProvider(Identifiers.SHOPPING_CART_FUNCTION_TYPE, unused -> new ShoppingCartFn());
-//        binder.bindFunctionProvider(Identifiers.STOCK_FUNCTION_TYPE, unused -> new StockFn());
     }
 
 
