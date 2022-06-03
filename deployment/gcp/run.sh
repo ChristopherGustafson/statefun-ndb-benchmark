@@ -18,7 +18,7 @@ GCP_BUCKET_ADDRESS=gs://statefun-benchmark
 
 FLINK_MACHINE_TYPE=n2-standard-16
 
-REMOTE_MACHINE_TYPE=n2-standard-4
+REMOTE_MACHINE_TYPE=n2-standard-8
 
 # RonDB config
 HEAD_INSTANCE_TYPE=n2-standard-2
@@ -36,7 +36,7 @@ REMOTE_FUNCTIONS_NAME=${NAME_PREFIX}remote-functions
 # Data utils config
 DATA_UTILS_NAME=${NAME_PREFIX}data-utils
 
-FLINK_TASK_SLOTS=8
+FLINK_TASK_SLOTS=16
 
 # User defined config
 FLINK_WORKERS="${1:-1}"
@@ -90,6 +90,7 @@ fail_time_period = 35
 #tar -czvf data-utils.tar.gz data-utils
 #gcloud compute scp data-utils.tar.gz $DATA_UTILS_NAME:~
 # Upload project to bucket
+#gsutil rm $GCP_BUCKET_ADDRESS/builds/data-utils.tar.gz
 #gsutil cp data-utils.tar.gz $GCP_BUCKET_ADDRESS/builds/
 # Upload config
 gcloud compute scp data-utils/config.properties $DATA_UTILS_NAME:~
@@ -136,26 +137,25 @@ echo "
 jobmanager.rpc.address: $JOBMANAGER_ADDRESS
 taskmanager.numberOfTaskSlots: $FLINK_TASK_SLOTS
 jobmanager.scheduler: adaptive
-jobmanager.memory.process.size: 32g
-taskmanager.memory.process.size: 32g
+jobmanager.memory.process.size: 16g
+taskmanager.memory.process.size: 52g
 # jobmanager.memory.process.size: 1600m
 # taskmanager.memory.process.size: 1728m
-taskmanager.memory.task.off-heap.size: 1g
-taskmanager.memory.framework.off-heap.size: 1g
+taskmanager.memory.task.off-heap.size: 12g
+taskmanager.memory.framework.off-heap.size: 12g
 parallelism.default: $PARALELLISM
 state.savepoints.dir: gs://statefun-benchmark/savepoints
 state.checkpoints.dir: gs://statefun-benchmark/checkpoints
 execution.checkpointing.interval: 20sec
-# execution.checkpointing.min-pause: 20sec
 statefun.async.max-per-task: 8096
-# taskmanager.memory.managed.size: 4g
-
+# For large state size tests
+#execution.checkpointing.min-pause: 20sec
 " >> deployment/flink/build/conf/flink-conf.yaml
-tar -C deployment/flink -czvf flink.tar.gz build
+#tar -C deployment/flink -czvf flink.tar.gz build
 
 # Upload flink build to gs bucket
-gsutil rm gs://statefun-benchmark/builds/flink.tar.gz
-gsutil cp flink.tar.gz  gs://statefun-benchmark/builds/
+#gsutil rm gs://statefun-benchmark/builds/flink.tar.gz
+#gsutil cp flink.tar.gz  gs://statefun-benchmark/builds/
 
 echo "Setting up Flink JobManager"
 #gcloud compute scp flink.tar.gz $JOBMANAGER_NAME:~
@@ -228,24 +228,22 @@ spec:
   gcloud compute ssh $JOBMANAGER_NAME -- bash -s < deployment/gcp/flink/run_statefun_remote.sh &
 fi
 echo "Waiting for StateFun runtime startup"
-sleep 60
+sleep 30
 
 
 # *
 # ************** BENCHMARK RUN **************
 # *
 
-echo "Starting Output Consumer"
-gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/run-output-consumer.sh &
-
-echo "Starting Data Generator"
-gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/run-data-generator.sh
-echo "Data Generator Finished"
-
-
-echo "Waiting to make sure all events are consumed"
-sleep 300
-echo "Output Consumer Finished"
+echo "Starting benchmark run"
+gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/run-benchmark-events.sh &
+sleep 10
+echo "Letting benchmark run for 600 seconds"
+sleep 700
+echo "Stopping event producer and waiting for final messages to be processed"
+gcloud compute ssh $DATA_UTILS_NAME -- pkill -f produce_events.py
+sleep 30
+gcloud compute ssh $DATA_UTILS_NAME -- pkill -f output_consumer_confluent.py
 
 # Copy data file to local, clean up last line in case it is malformed
 NOW="$(date +'%d-%m-%Y_%H:%M')"

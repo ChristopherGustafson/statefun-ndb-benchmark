@@ -90,7 +90,7 @@ echo "${BenchmarkJobName}Starting output consumer..."
 cd data-utils
 rm -rf output-data
 rm output_consumer.log
-nohup python3 -u output_consumer.py > output_consumer.log &
+nohup python3 -u output_consumer_confluent.py > output_consumer.log &
 cd ..
 
 # Let it run for 160 seconds
