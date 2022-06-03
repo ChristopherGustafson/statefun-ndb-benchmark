@@ -63,7 +63,8 @@ final class ShoppingCartFn implements StatefulFunction {
   private static final Logger LOG = LoggerFactory.getLogger(ShoppingCartFn.class);
 
   static final TypeName TYPE = TypeName.typeNameOf(Identifiers.NAMESPACE, "shopping-cart");
-  static final ValueSpec<Basket> BASKET = ValueSpec.named("basket").withCustomType(Basket.TYPE);
+  // static final ValueSpec<Basket> BASKET = ValueSpec.named("basket").withCustomType(Basket.TYPE);
+  static final ValueSpec<Integer> BASKET = ValueSpec.named("basket").withIntType();
 
   @Override
   public CompletableFuture<Void> apply(Context context, Message message) {
@@ -93,17 +94,20 @@ final class ShoppingCartFn implements StatefulFunction {
 
       if (ItemAvailability.Status.INSTOCK.equals(availability.getStatus())) {
         final AddressScopedStorage storage = context.storage();
-        final Basket basket = storage.get(BASKET).orElse(Basket.initEmpty());
+        // final Basket basket = storage.get(BASKET).orElse(Basket.initEmpty());
+        final int basket = storage.get(BASKET).orElse(0);
 
         // ItemAvailability event comes from the Stock function and contains the itemId as the
         // caller id
         final Optional<Address> caller = context.caller();
         if (caller.isPresent()) {
-          basket.add(caller.get().id(), availability.getQuantity());
+          // basket.add(caller.get().id(), availability.getQuantity());
+          final int newBasket = basket + availability.getQuantity();
+          storage.set(BASKET, newBasket);
         } else {
           throw new IllegalStateException("There should always be a caller in this example");
         }
-        storage.set(BASKET, basket);
+        // storage.set(BASKET, basket);
       }
 
       AddToCart addConfirm = AddToCart.newBuilder()
@@ -131,34 +135,33 @@ final class ShoppingCartFn implements StatefulFunction {
       final Checkout checkout = message.as(CHECKOUT_TYPE);
       final AddressScopedStorage storage = context.storage();
 
-      final Optional<String> itemsOption =
-          storage
-              .get(BASKET)
-              .map(
-                  basket ->
-                      basket.getEntries().stream()
-                          .map(entry -> entry.getKey() + ": " + entry.getValue())
-                          .collect(Collectors.joining("\n")));
+//      final Optional<String> itemsOption =
+//          storage
+//              .get(BASKET)
+//              .map(
+//                  basket ->
+//                      basket.getEntries().stream()
+//                          .map(entry -> entry.getKey() + ": " + entry.getValue())
+//                          .collect(Collectors.joining("\n")));
 
-      itemsOption.ifPresent(
-          items -> {
-            Receipt receipt = Receipt.newBuilder()
-                    .setUserId(context.self().id())
-                    .setReceipt(items)
-                    .setPublishTimestamp(checkout.getPublishTimestamp())
-                    .build();
-//            final EgressMessage egressMessage =
-//                KafkaEgressMessage.forEgress(Identifiers.RECEIPT_EGRESS)
-//                    .withTopic(Identifiers.RECEIPT_TOPIC)
-//                    .withUtf8Key(context.self().id())
-//                    .withValue(RECEIPT_TYPE, receipt)
-//                    .build();
-//            context.send(egressMessage);
+//      itemsOption.ifPresent(
+//          items -> {
+        final int basketQ =  storage.get(BASKET).orElse(0);
+        final String items = "Total items: " + basketQ;
+        Receipt receipt = Receipt.newBuilder()
+                .setUserId(context.self().id())
+                .setReceipt(items)
+                .setPublishTimestamp(checkout.getPublishTimestamp())
+                .build();
+        final EgressMessage egressMessage =
+            KafkaEgressMessage.forEgress(Identifiers.RECEIPT_EGRESS)
+                .withTopic(Identifiers.RECEIPT_TOPIC)
+                .withUtf8Key(context.self().id())
+                .withValue(RECEIPT_TYPE, receipt)
+                .build();
+        context.send(egressMessage);
 
-//            System.out.println("---");
-//            System.out.println("Received checkout for basket:\n" + items);
-//            System.out.println("---");
-          });
+//          });
     }
     return context.done();
   }

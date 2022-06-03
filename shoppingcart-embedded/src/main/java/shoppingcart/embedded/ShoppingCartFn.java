@@ -34,8 +34,29 @@ public class ShoppingCartFn implements StatefulFunction {
     @Persisted
     private final PersistedValue<Integer> BASKET = PersistedValue.of("basket", Integer.class);
 
-//    @Persisted
-//    private final PersistedValue<String> S1 = PersistedValue.of("first", String.class);
+    @Persisted
+    private final PersistedValue<String> S1 = PersistedValue.of("first", String.class);
+
+    @Persisted
+    private final PersistedValue<String> S2 = PersistedValue.of("second", String.class);
+
+    @Persisted
+    private final PersistedValue<String> S3 = PersistedValue.of("third", String.class);
+
+    @Persisted
+    private final PersistedValue<String> S4 = PersistedValue.of("fourth", String.class);
+
+    @Persisted
+    private final PersistedValue<String> S5 = PersistedValue.of("fifth", String.class);
+
+    @Persisted
+    private final PersistedValue<String> S6 = PersistedValue.of("sixth", String.class);
+
+    @Persisted
+    private final PersistedValue<String> S7 = PersistedValue.of("seventh", String.class);
+
+    @Persisted
+    private final PersistedValue<String> S8 = PersistedValue.of("eighth", String.class);
 
     @Override
     public void invoke(Context context, Object input) {
@@ -57,14 +78,57 @@ public class ShoppingCartFn implements StatefulFunction {
                 }
             }
 
+            String s1;
+            String s2;
+            String s3;
+            String s4;
+            String s5;
+            String s6;
+            String s7;
+            String s8;
+            try{
+                s1 = S1.get();
+                if(s1 == null){
+                    S1.set(new String(new byte[500]));
+                }
+                s2 = S2.get();
+                if(s2 == null){
+                    S2.set(new String(new byte[500]));
+                }
+                s3 = S3.get();
+                if(s3 == null){
+                    S3.set(new String(new byte[500]));
+                }
+                s4 = S4.get();
+                if(s4 == null){
+                    S4.set(new String(new byte[500]));
+                }
+                s5 = S5.get();
+                if(s5 == null){
+                    S5.set(new String(new byte[500]));
+                }
+                s6 = S6.get();
+                if(s6 == null){
+                    S6.set(new String(new byte[500]));
+                }
+                s7 = S7.get();
+                if(s7 == null){
+                    S7.set(new String(new byte[500]));
+                }
+                s8 = S8.get();
+                if(s8 == null){
+                    S8.set(new String(new byte[500]));
+                }
+            } catch (Exception e) {
+                System.out.println("Exception during state operation: " + e);
+            }
+
+
             RequestItem requestMsg = RequestItem.newBuilder()
                     .setQuantity(addToCartMsg.getQuantity() < 0 ? addToCartMsg.getQuantity() : 1)
                     .setPublishTimestamp(addToCartMsg.getPublishTimestamp())
                     .build();
 
-//            LOG.info("---");
-//            LOG.info("Received AddToCart for itemId " + addToCartMsg.getItemId() + " and quantity " + addToCartMsg.getQuantity());
-//            LOG.info("---");
 
             context.send(Identifiers.STOCK_FUNCTION_TYPE, addToCartMsg.getItemId(), requestMsg);
         } else if (input instanceof ItemAvailability) {

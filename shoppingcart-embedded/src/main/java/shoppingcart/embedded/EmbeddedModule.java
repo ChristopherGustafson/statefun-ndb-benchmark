@@ -12,6 +12,7 @@ import shoppingcart.embedded.protos.Checkout;
 import shoppingcart.embedded.protos.Receipt;
 import shoppingcart.embedded.protos.RestockItem;
 
+import java.time.Duration;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
@@ -81,6 +82,7 @@ public class EmbeddedModule implements StatefulFunctionModule {
         EgressSpec<AddToCart> addConfirmEgress =
                 KafkaEgressBuilder.forIdentifier(Identifiers.ADD_CONFIRM_EGRESS)
                         .withKafkaAddress(kafkaAddress)
+                        .withExactlyOnceProducerSemantics(Duration.ofMinutes(15))
 //                        .withProperty("sasl.mechanism", saslMechanism)
 //                        .withProperty("sasl.jaas.config", saslConfig)
                         .withSerializer(Serialization.AddToCartKafkaSerializer.class)
@@ -90,6 +92,7 @@ public class EmbeddedModule implements StatefulFunctionModule {
         EgressSpec<Receipt> receiptEgress =
                 KafkaEgressBuilder.forIdentifier(Identifiers.RECEIPT_EGRESS)
                         .withKafkaAddress(kafkaAddress)
+                        .withExactlyOnceProducerSemantics(Duration.ofMinutes(15))
 //                        .withProperty("sasl.mechanism", saslMechanism)
 //                        .withProperty("sasl.jaas.config", saslConfig)
                         .withSerializer(Serialization.ReceiptKafkaSerializer.class)

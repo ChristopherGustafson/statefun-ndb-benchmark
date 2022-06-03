@@ -39,8 +39,8 @@ final class Identifiers {
   private Identifiers() {}
 
   static final TypeName ADD_CONFIRM_EGRESS = TypeName.typeNameOf(NAMESPACE, "add-confirm");
-  static final TypeName RECEIPT_EGRESS = TypeName.typeNameOf(NAMESPACE, "receipt");
-  static final String RECEIPT_TOPIC = "receipt";
+  static final TypeName RECEIPT_EGRESS = TypeName.typeNameOf(NAMESPACE, "receipts");
+  static final String RECEIPT_TOPIC = "receipts";
   static final String ADD_CONFIRM_TOPIC = "add-confirm";
 
   static final TypeName FAULTY_FN_TYPE = TypeName.typeNameOf(Identifiers.NAMESPACE, "faulty");
