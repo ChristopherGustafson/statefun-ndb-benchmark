@@ -42,13 +42,14 @@ item_counts = {}
 
 
 def get_random_user():
-    #random_user = np.random.randint(0, unique_users)
-    power_l_r = np.random.power(power_law_a)
-    random_user = int(power_l_r * unique_users)
-    if random_user not in used_users:
-        used_users[random_user] = True
-        global count
-        count = count + 1
+    random_user = np.random.randint(0, unique_users)
+    while random_user not in used_users:
+        random_user = np.random.randint(0, unique_users)
+    #power_l_r = np.random.power(power_law_a)
+    #random_user = int(power_l_r * unique_users)
+    used_users[random_user] = True
+    global count
+    count = count + 1
     return str(users[random_user])
 
 
@@ -97,7 +98,7 @@ def send_restock():
 
 user_requests = {}
 
-
+user_index = 0
 for i in range(1, time_periods+1):
     # Create time directory
     path = os.path.join(dirname, 'data/time{}'.format(i))
@@ -106,32 +107,30 @@ for i in range(1, time_periods+1):
     # Create text file
     file_path = os.path.join(path, "data.txt")
     file = open(file_path, "w+")
-    if i == 100:
-        print("At period 100 we have used " + str(count))
+    print(f"Generating data for time period {i}, we have used {str(count)} users")
 
     for _ in range(requests_per_period):
-        action = random.randint(0, 20)
-        # Restock for 1/20 requests
-        if action == 0:
-            send_restock()
+        # Select random user
+        user_id = users[user_index]
+        user_index = user_index + 1
+        if user_id not in used_users:
+            used_users[user_id] = True
+            count = count + 1
+        # Check if user send request before, and how many adds are left
+        requests_before_checkout = user_requests.get(user_id)
+        # If it has not sent before, randomize how many adds before checkout and send add
+        if requests_before_checkout is None:
+            cart_adds = random.randint(1, max_add_to_carts-1)
+            user_requests[user_id] = cart_adds
+            send_add_to_cart(user_id)
+        # If no requests left send checkout
+        elif requests_before_checkout == 0:
+            del user_requests[user_id]
+            send_checkout(user_id)
+        # Else send add and reduce number of adds left before checkout
         else:
-            # Select random user
-            user_id = get_random_user()
-            # Check if user send request before, and how many adds are left
-            requests_before_checkout = user_requests.get(user_id)
-            # If it has not sent before, randomize how many adds before checkout and send add
-            if requests_before_checkout is None:
-                cart_adds = random.randint(1, max_add_to_carts-1)
-                user_requests[user_id] = cart_adds
-                send_add_to_cart(user_id)
-            # If no requests left send checkout
-            elif requests_before_checkout == 0:
-                del user_requests[user_id]
-                send_checkout(user_id)
-            # Else send add and reduce number of adds left before checkout
-            else:
-                user_requests[user_id] = requests_before_checkout-1
-                send_add_to_cart(user_id)
+            user_requests[user_id] = requests_before_checkout-1
+            send_add_to_cart(user_id)
 
 
 

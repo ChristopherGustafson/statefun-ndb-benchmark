@@ -15,8 +15,8 @@ restock_topic = "restock"
 # How many time periods of data that exist
 time_periods = 250
 # Size of every event micro batch, the program will wait a certain time between every micro batch of events
-# to produce the correct number of events per second 
-micro_batch_size = 100
+# to produce the correct number of events per second, default to 0.1 second
+micro_batch_size = int(events_per_sec/10)
 wait_time = (micro_batch_size/events_per_sec)
 events_produced = 0
 
@@ -26,6 +26,8 @@ crashed = False
 # fail_time_period = round(sec_before_crash * events_per_sec / 30000)
 
 print("Running event producer, {} events per second, failing at time period {}".format(events_per_sec, fail_time_period))
+
+benchmark_start = time.time_ns()
 
 while True:
     for i in range(1, time_periods+1):
@@ -47,15 +49,17 @@ while True:
                         event[1] = event[1][:quantity_i] + "-1" + event[1][quantity_i+1:]
                         crashed = True
 
-                    #, key=bytes(event[0], "utf-8")
-                    producer.send(add_to_cart_topic, value=bytes(event[1], "utf-8"))
+                    producer.send(add_to_cart_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
                 elif "userId" in event[1]:
-                    producer.send(checkout_topic, value=bytes(event[1], "utf-8"))
+                    producer.send(checkout_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
                 else:
-                    producer.send(restock_topic, value=bytes(event[1], "utf-8"))
+                    producer.send(restock_topic, key=bytes(event[0], "utf-8"), value=bytes(event[1], "utf-8"))
                 if (events_produced % events_per_sec) == 0:
-                    print(f"Produced {events_produced} events")
-            batch_duration = (time.time_ns() - batch_start)/1000000000
-            if batch_duration < wait_time:
-                time.sleep(wait_time - batch_duration)
+                    benchmark_duration = (time.time_ns() - benchmark_start)/1000000000
+                    print(f"Produced {events_produced} events, time passed: {benchmark_duration} sec")
+            benchmark_duration = (time.time_ns() - benchmark_start)/1000000000
+            if events_produced/events_per_sec > benchmark_duration:
+                batch_duration = (time.time_ns() - batch_start)/1000000000
+                if batch_duration < wait_time:
+                    time.sleep(wait_time - batch_duration)
     print("RESTARTING FROM BEGINNING OF DATA SET")
