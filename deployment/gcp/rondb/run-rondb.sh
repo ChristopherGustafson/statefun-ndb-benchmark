@@ -8,9 +8,9 @@
 #DATA_NODE_INSTANCE_TYPE=n2-highmem-16
 #API_INSTANCE_TYPE=n2-highcpu-16
 # Low performance
-HEAD_INSTANCE_TYPE=n2-standard-8
+HEAD_INSTANCE_TYPE=n2-standard-4
 DATA_NODE_INSTANCE_TYPE=n2-standard-8
-API_NODE_INSTANCE_TYPE=n2-standard-8
+API_NODE_INSTANCE_TYPE=n2-standard-4
 NUM_DATA_NODES="${1:-2}"
 NUM_API_NODES=1
 NUM_REPLICAS=2
@@ -35,7 +35,7 @@ ZONE=3
 --database-node-boot-size $DATA_NODE_BOOT_SIZE
 #--debug \
 
-sleep 400
+sleep 350
 gcloud compute scp deployment/gcp/rondb/init_db.sql ${VM_NAME}api00:~
 gcloud compute scp deployment/gcp/rondb/clear_db.sql ${VM_NAME}api00:~
 gcloud compute ssh ${VM_NAME}api00 -- bash -s < deployment/gcp/rondb/initialize-tables.sh

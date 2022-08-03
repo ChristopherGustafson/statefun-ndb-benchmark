@@ -13,7 +13,7 @@ USER=`whoami`
 GCP_IMAGE=ubuntu-minimal-2004-focal-v20220419a
 GCP_IMAGE_PROJECT=ubuntu-os-cloud
 GCP_MACHINE_TYPE=n2-standard-4
-GCP_SERVICE_ACCOUNT=christopher@hops-20.iam.gserviceaccount.com
+GCP_SERVICE_ACCOUNT= # GCP SERVICE ACCOUNT
 GCP_BUCKET_ADDRESS=gs://statefun-benchmark
 
 FLINK_MACHINE_TYPE=n2-standard-16
@@ -85,13 +85,13 @@ rm -rf data-utils/output-data/
 echo "[Config]
 bootstrap.servers = $KAFKA_ADDRESS:9092
 events_per_sec = $EVENTS_PER_SEC
-fail_time_period = 35
+fail_time_period = 70
 " > data-utils/config.properties
-#tar -czvf data-utils.tar.gz data-utils
-#gcloud compute scp data-utils.tar.gz $DATA_UTILS_NAME:~
+tar -czvf data-utils.tar.gz data-utils
+gcloud compute scp data-utils.tar.gz $DATA_UTILS_NAME:~
 # Upload project to bucket
-#gsutil rm $GCP_BUCKET_ADDRESS/builds/data-utils.tar.gz
-#gsutil cp data-utils.tar.gz $GCP_BUCKET_ADDRESS/builds/
+gsutil rm $GCP_BUCKET_ADDRESS/builds/data-utils.tar.gz
+gsutil cp data-utils.tar.gz $GCP_BUCKET_ADDRESS/builds/
 # Upload config
 gcloud compute scp data-utils/config.properties $DATA_UTILS_NAME:~
 gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/data-utils-startup.sh
@@ -128,11 +128,10 @@ state.backend.ndb.lazyrecovery: true
   fi
 fi
 
-# For setting checkpoints directories, not setting will set flink to use JobManager Storage
+# Set Flink Config
+# TODO: Move all options to config file
 
 PARALELLISM=$((FLINK_WORKERS * FLINK_TASK_SLOTS))
-
-# CHANGE BACK MEMORY IF NEEDED
 echo "
 jobmanager.rpc.address: $JOBMANAGER_ADDRESS
 taskmanager.numberOfTaskSlots: $FLINK_TASK_SLOTS
@@ -144,21 +143,20 @@ taskmanager.memory.process.size: 52g
 taskmanager.memory.task.off-heap.size: 12g
 taskmanager.memory.framework.off-heap.size: 12g
 parallelism.default: $PARALELLISM
-state.savepoints.dir: gs://statefun-benchmark/savepoints
+state.savepoints.dir: gs://$GCP_BUCKET_ADDRESS/savepoints
 state.checkpoints.dir: gs://statefun-benchmark/checkpoints
 execution.checkpointing.interval: 20sec
 statefun.async.max-per-task: 8096
 # For large state size tests
-#execution.checkpointing.min-pause: 20sec
+execution.checkpointing.min-pause: 20sec
 " >> deployment/flink/build/conf/flink-conf.yaml
-#tar -C deployment/flink -czvf flink.tar.gz build
+tar -C deployment/flink -czvf flink.tar.gz build
 
 # Upload flink build to gs bucket
-#gsutil rm gs://statefun-benchmark/builds/flink.tar.gz
-#gsutil cp flink.tar.gz  gs://statefun-benchmark/builds/
+gsutil rm gs://statefun-benchmark/builds/flink.tar.gz
+gsutil cp flink.tar.gz  gs://statefun-benchmark/builds/
 
 echo "Setting up Flink JobManager"
-#gcloud compute scp flink.tar.gz $JOBMANAGER_NAME:~
 gcloud compute scp deployment/flink/build/conf/flink-conf.yaml $JOBMANAGER_NAME:~
 gcloud compute ssh $JOBMANAGER_NAME -- bash -s < deployment/gcp/flink/jobmanager_setup.sh
 
@@ -176,7 +174,6 @@ echo "Initializing TaskManagers"
 for i in $(seq 1 $FLINK_WORKERS)
 do
   WORKER_NAME="$TASKMANAGER_NAME-$i"
-  #gcloud compute scp flink.tar.gz $WORKER_NAME:~
   gcloud compute scp deployment/flink/build/conf/flink-conf.yaml $WORKER_NAME:~
   gcloud compute ssh $WORKER_NAME -- bash -s < deployment/gcp/flink/taskmanager_setup.sh
 done
@@ -184,11 +181,11 @@ done
 echo "Building StateFun job using $FUNCTION_TYPE functions"
 if [ "$FUNCTION_TYPE" = "embedded" ];
 then
-  echo "bootstrap.servers=$KAFKA_ADDRESS:9092" > shoppingcart-embedded/src/main/resources/config.properties
-  (cd shoppingcart-embedded/;mvn clean package)
+  echo "bootstrap.servers=$KAFKA_ADDRESS:9092" > shoppingcart-embedded-simple/src/main/resources/config.properties
+  (cd shoppingcart-embedded-simple/;mvn clean package)
 
   echo "Running StateFun runtime"
-  gcloud compute scp shoppingcart-embedded/target/shoppingcart-embedded-1.0-SNAPSHOT-jar-with-dependencies.jar $JOBMANAGER_NAME:~
+  gcloud compute scp shoppingcart-embedded-simple/target/shoppingcart-embedded-1.0-SNAPSHOT-jar-with-dependencies.jar $JOBMANAGER_NAME:~
   gcloud compute ssh $JOBMANAGER_NAME -- bash -s < deployment/gcp/flink/run_statefun_embedded.sh &
 else
   echo "Creating VM for remote functions"
@@ -239,7 +236,7 @@ echo "Starting benchmark run"
 gcloud compute ssh $DATA_UTILS_NAME -- bash -s < deployment/gcp/data-utils/run-benchmark-events.sh &
 sleep 10
 echo "Letting benchmark run for 600 seconds"
-sleep 700
+sleep 1100
 echo "Stopping event producer and waiting for final messages to be processed"
 gcloud compute ssh $DATA_UTILS_NAME -- pkill -f produce_events.py
 sleep 30
@@ -271,5 +268,3 @@ do
  gcloud compute scp $WORKER_NAME:~/build/log/flink-$USER-taskexecutor-0-statefun-benchmark-taskmanager-${i}.log.3 output-data/$NOW/taskmanager-${i}.log.3
  gcloud compute instances delete $WORKER_NAME --quiet
 done
-
-#mv output-data/$NOW/ /media/farah/ce8e52bc-a47a-4fb7-b504-390efd9006ff/christopher/benchmark-data/

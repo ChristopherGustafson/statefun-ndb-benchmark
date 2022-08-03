@@ -1,8 +1,17 @@
 # Statefun NDB Benchmark
 Benchmark for my Thesis *Highly Available Stateful Serverless Functions in Apache Flink*.
 
-This benchmark is based on [OSPBench](https://github.com/Klarrio/open-stream-processing-benchmark), 
-and adapted to fit Stateful Serverless functions.
+This benchmark was developed to compare Apache Flink StateFul functions using the current standard RocksDB backend
+and a prototype of a decoupled state backend called FlinkNDB. It could be also be used to benchmark other state backends
+or other Stateful Serverless platform. To customize the benchmark, look at the file [``run.sh``](/deployment/gcp/run.sh)
+and change out the state backend or the deployment of the used serverless platform.
+
+## Notes/Todos
+The following is a list of notes and todos that you need to know before using the tool.
+* To reduce the amount of data transferred between the local computer and gcp, the flink/data-utils 
+build is first uploaded to a gcp bucket and then transferred from there to the VMs. The
+address of the gcp bucket is currently hard-coded into the startup-scripts, so the proper address has
+to be edited into these files. TODO: Make general solution to bucket address in startup scripts.
 
 ## Deployment
 Deployment scripts can be found in [``deployment``](/deployment).
@@ -19,7 +28,8 @@ Instructions of how to build Flink can be found [here](https://github.com/apache
 ```shell
 cp -r <path-to-flink-build> /deployment/flink/build/
 ```
-
+Finally, different configuration parameters are set in the deployment scripts, open the script you are about to run
+and edit the configuration parameters at the top of the file.  
 
 ### Local Deployment
 
@@ -79,7 +89,7 @@ mvn clean install -DskipTests -Dscala-2.12
 ```
 6. Copy the build folder ``flink-rondb/flink-dist/target/flink-1.14.3-SNAPSHOT-bin/flink-1.14.3-SNAPSHOT`` into a the folder ``deployment/flink`` and rename it to ``build``
 7. Configure the Flink cluster by making sure that the following fields are set in 
-[``deployment/flink/build/conf/flink-conf.yaml``](deployment/flink/build/conf/flink-conf.yaml):
+[``deployment/flink/build/conf/flink-conf.yaml``](deployment/flink/old-rocks-build/conf/flink-conf.yaml):
 ```yaml
 # For NDB:
 state.backend: ndb

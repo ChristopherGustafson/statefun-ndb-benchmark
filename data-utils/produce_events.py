@@ -13,7 +13,7 @@ add_to_cart_topic = "add-to-cart"
 checkout_topic = "checkout"
 restock_topic = "restock"
 # How many time periods of data that exist
-time_periods = 250
+time_periods = 200
 # Size of every event micro batch, the program will wait a certain time between every micro batch of events
 # to produce the correct number of events per second, default to 0.1 second
 micro_batch_size = int(events_per_sec/10)

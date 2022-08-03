@@ -52,7 +52,7 @@ echo "${BenchmarkJobName}Building StateFun Job..."
 if [ "$FUNCTION_TYPE" = "embedded" ];
 then
   echo "Building embedded StateFun job..."
-  (cd shoppingcart-embedded/;mvn clean package)
+  (cd shoppingcart-embedded-simple/;mvn clean package)
 else
   echo "Building remote StateFun Module..."
   (cd shoppingcart-remote-module/;mvn clean package)
@@ -67,7 +67,7 @@ echo "${BenchmarkJobName}Starting StateFun runtime with ${FUNCTION_TYPE} functio
 
 if [ "$FUNCTION_TYPE" = "embedded" ];
 then
-  ./deployment/flink/build/bin/flink run -c org.apache.flink.statefun.flink.core.StatefulFunctionsJob shoppingcart-embedded/target/shoppingcart-embedded-1.0-SNAPSHOT-jar-with-dependencies.jar &
+  ./deployment/flink/build/bin/flink run -c org.apache.flink.statefun.flink.core.StatefulFunctionsJob shoppingcart-embedded-simple/target/shoppingcart-embedded-1.0-SNAPSHOT-jar-with-dependencies.jar &
 else
   ./deployment/flink/build/bin/flink run -c org.apache.flink.statefun.flink.core.StatefulFunctionsJob shoppingcart-remote-module/target/shoppingcart-remote-module-1.0-SNAPSHOT-jar-with-dependencies.jar &
   rm nohup.out
